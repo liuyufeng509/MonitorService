@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     //读取配置文件
-    QReadConfig::getInstance()->readConfigFile("/home/liuyufeng/MonitorService/MonitorService/config.ini");
+    QReadConfig::getInstance()->readConfigFile("/home/liuyufeng/MonitorService/config.ini");
 //    QReadConfig::getInstance()->printInfo();
 
     //启动系统资源监控线程，进程狗应该是属于系统资源监控的一部分
