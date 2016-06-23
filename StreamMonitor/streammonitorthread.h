@@ -5,6 +5,7 @@
 #include<QTimer>
 #include"streammonitor.h"
 #include"../config/qreadconfig.h"
+#include "../commandline.h"
 #include"localserver.h"
 #include "localclient.h"
 /**

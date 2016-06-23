@@ -4,12 +4,29 @@
 #include<iostream>
 #include<QString>
 #include<QStringList>
-
+#include"StreamMonitor/streammonitor.h"
 using namespace std;
 class CommandLine
 {
 public:
+    static CommandLine * getInstance()
+    {
+        if(m_pInstance == NULL)
+        {
+            m_pInstance = new CommandLine();
+        }
+        return m_pInstance;
+    }
+
+    void setStreamMonitor(StreamMonitor* pStreamMon)
+    {
+        streamMonitor= pStreamMon;
+    }
+
+private:
     CommandLine();
+
+    static CommandLine * m_pInstance;
 
 public:
     void printHelp();
@@ -31,7 +48,7 @@ public:
 private:
     QString         m_comm;
     QStringList     commList;
-
+    StreamMonitor *streamMonitor;//便于访问监控数据结果
 };
 
 #endif // COMMANDLINE_H

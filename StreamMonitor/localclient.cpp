@@ -38,6 +38,9 @@ void LocalClient::writeData(QByteArray data)
     {
         socket->write(data);
         cout<<"发送数据："<<QString(data).toStdString()<<endl;
+    }else
+    {
+        cout<<"LocalClient writeData err"<<socket->errorString().toStdString()<<endl;
     }
 }
 

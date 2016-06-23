@@ -1,6 +1,8 @@
 #include "commandline.h"
 #include<string>
 #include<QRegExp>
+
+CommandLine * CommandLine::m_pInstance=NULL;
 CommandLine::CommandLine():m_comm("")
 {
     commList<<"lsDisk"<<"lsCamera"<<"lsDB"<<"lsThreads"
@@ -29,7 +31,8 @@ void CommandLine::lsPid(int pid)
 
 void CommandLine::lsDisk()
 {
-    cout<<"list disk info"<<endl;
+    cout<<"**********list disk info************"<<endl;
+    streamMonitor->printDiskInfo();
 }
 
 void CommandLine::lsCamera()

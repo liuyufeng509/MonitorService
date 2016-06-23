@@ -23,11 +23,8 @@ int main(int argc, char *argv[])
 
 
     //命令行处理类
-//    CommandLine commLine;
-//    commLine.printHelp();
-//    commLine.run();
-
-
+    CommandLine::getInstance()->printHelp();
+    CommandLine::getInstance()->run();
 
 //    qApp->quit();
 //    QProcess::startDetached(qApp->applicationFilePath(), QStringList());  重启本身
