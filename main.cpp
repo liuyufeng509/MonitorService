@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
 //    QReadConfig::getInstance()->printInfo();
 
     //启动系统资源监控线程，进程狗应该是属于系统资源监控的一部分
-    SysMonitorThread sysMonitorThread;
-    sysMonitorThread.start();
+//    SysMonitorThread sysMonitorThread;
+//    sysMonitorThread.start();
 
     //启动业务逻辑监控线程
     StreamMonitorThread streamMonitorThread;
@@ -23,9 +23,9 @@ int main(int argc, char *argv[])
 
 
     //命令行处理类
-    CommandLine commLine;
-    commLine.printHelp();
-    commLine.run();
+//    CommandLine commLine;
+//    commLine.printHelp();
+//    commLine.run();
 
 
 

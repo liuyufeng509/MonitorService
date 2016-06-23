@@ -17,6 +17,7 @@ void QReadConfig::readConfigFile(QString filePath)
 
     domainSockConf.serverName = configIniRead->value("DoMainSock/sername").toString();
     domainSockConf.clientName = configIniRead->value("DoMainSock/clientname").toString();
+    domainSockConf.checkTimer = configIniRead->value("DoMainSock/checktime").toInt();
 
     cameraSvrConf.bOpen = configIniRead->value("CameraSvr/open").toBool();
     cameraSvrConf.timer = configIniRead->value("CameraSvr/timer").toInt();
@@ -35,6 +36,7 @@ void QReadConfig::readConfigFile(QString filePath)
 
     diskConf.bOpen = configIniRead->value("Disk/open").toBool();
     diskConf.timer = configIniRead->value("Disk/timer").toInt();
+    diskConf.tmpFilePath = configIniRead->value("Disk/tmpfilepath").toString();
 
     netConf.bOpen = configIniRead->value("Net/open").toBool();
     netConf.timer = configIniRead->value("Net/timer").toInt();

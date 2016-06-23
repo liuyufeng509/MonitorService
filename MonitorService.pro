@@ -1,4 +1,4 @@
-QT += core
+QT += core network
 QT -= gui
 
 CONFIG += c++11
@@ -15,7 +15,9 @@ SOURCES += main.cpp \
     SysMonitor/sysmonitorthread.cpp \
     StreamMonitor/streammonitor.cpp \
     StreamMonitor/streammonitorthread.cpp \
-    commandline.cpp
+    commandline.cpp \
+    StreamMonitor/localclient.cpp \
+    StreamMonitor/localserver.cpp
 
 HEADERS += \
     config/qreadconfig.h \
@@ -24,7 +26,10 @@ HEADERS += \
     SysMonitor/sysmonitorthread.h \
     StreamMonitor/streammonitor.h \
     StreamMonitor/streammonitorthread.h \
-    commandline.h
+    commandline.h \
+    StreamMonitor/localclient.h \
+    StreamMonitor/localserver.h \
+    common.h
 
 DISTFILES += \
     config.ini \

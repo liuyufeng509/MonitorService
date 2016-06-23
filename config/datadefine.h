@@ -80,6 +80,7 @@ struct DiskConfig
     }
     bool	    bOpen;		//是否开启
     int		    timer;		//轮询间隔
+    QString   tmpFilePath;
 };
 
 
@@ -118,11 +119,12 @@ struct RelAndHisVideoConfig
 //domainSocket 配置项
 struct DomainSockConfig
 {
-    DomainSockConfig():serverName(""),clientName("")
+    DomainSockConfig():serverName(""),clientName(""),checkTimer(0)
     {
 
     }
     QString         serverName;  //服务器名称
     QString         clientName;  //客户端名称
+    int                 checkTimer;    //检测连接状态定时器
 };
 #endif // DATADEFINE_H
