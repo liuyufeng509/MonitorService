@@ -26,6 +26,7 @@ struct CameraSvrConfig
 
     bool 	    bOpen;		//是否开启
     int         timer;		//轮询间隔
+    QString  vdPath;    //摄像机视频文件保存的路径
 };
 
 struct DBSvrConfig
@@ -36,6 +37,7 @@ struct DBSvrConfig
     }
     bool 	    bOpen;		//是否开启
     int 	    timer;		//轮询间隔
+    QString dbName; //数据库名称
 };
 
 
@@ -80,7 +82,7 @@ struct DiskConfig
     }
     bool	    bOpen;		//是否开启
     int		    timer;		//轮询间隔
-    QString   tmpFilePath;
+    QStringList diskPaths;       //硬盘们的挂载路径
 };
 
 

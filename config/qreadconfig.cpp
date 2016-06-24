@@ -21,9 +21,11 @@ void QReadConfig::readConfigFile(QString filePath)
 
     cameraSvrConf.bOpen = configIniRead->value("CameraSvr/open").toBool();
     cameraSvrConf.timer = configIniRead->value("CameraSvr/timer").toInt();
+    cameraSvrConf.vdPath = configIniRead->value("CameraSvr/vdPath").toString();
 
     dbSvrConf.bOpen = configIniRead->value("DBSvr/open").toBool();
     dbSvrConf.timer = configIniRead->value("DBSvr/timer").toInt();
+    dbSvrConf.dbName = configIniRead->value("DBSvr/dbname").toString();
 
     threadSvrConf.bOpen = configIniRead->value("ThreadSvr/open").toBool();
     threadSvrConf.timer = configIniRead->value("ThreadSvr/timer").toInt();
@@ -36,7 +38,7 @@ void QReadConfig::readConfigFile(QString filePath)
 
     diskConf.bOpen = configIniRead->value("Disk/open").toBool();
     diskConf.timer = configIniRead->value("Disk/timer").toInt();
-    diskConf.tmpFilePath = configIniRead->value("Disk/tmpfilepath").toString();
+    diskConf.diskPaths = configIniRead->value("Disk/tmpfilepath").toString().split('#');
 
     netConf.bOpen = configIniRead->value("Net/open").toBool();
     netConf.timer = configIniRead->value("Net/timer").toInt();

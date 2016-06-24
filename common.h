@@ -7,9 +7,11 @@ struct DiskStateInfo{
     enum DiskState{
         DISK_NORMAL,
         CAN_NOT_CREATE_FILE,
+        CAN_NOT_WRITE_FILE,
         CAN_NOT_MOUNT,
         DISK_OVER_LOAD,
     };
+    QString    mountPath;       //硬盘的挂载路径
     DiskState state;        //暂时只有硬盘状态，其他的信息如读写速度等，后续资源监控时添加
 };
 
@@ -18,7 +20,9 @@ struct HisVdFileState
 {
     enum HisVdState{
         NORMAL,
-        UNNORMAL
+        UNNORMAL,
+        NOT_EXIST,
+        NOT_OPEN,
     };
     HisVdFileState():hisVdPath(""), state(NORMAL)
     {
@@ -43,7 +47,8 @@ struct CameraStateInfo
 
     enum RelVdState{
         NORMAL,
-        UNNORMAL
+        UNNORMAL,
+        NOT_EXIST
     };
     QString  cmareId;
     bool       online;

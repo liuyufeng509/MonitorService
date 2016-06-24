@@ -5,12 +5,17 @@
 #include<QFile>
 #include <QTextStream>
 #include <QDomDocument>
-
+#include <QFileInfo>
+#include<QSqlDatabase>
+#include<math.h>
+#include<QSqlQuery>
+#include<QDateTime>
 using namespace std;
 
 StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
 {
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_CREATE_FILE, "不能创建文件"); //向map里添加一对“键-值”
+    diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_WRITE_FILE, "不能写入文件"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_MOUNT, "硬盘未挂载"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::DISK_OVER_LOAD, "硬盘满"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::DISK_NORMAL, "硬盘状态正常"); //向map里添加一对“键-值”
@@ -20,6 +25,7 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
 
     relVdRecErrInfoMap.insert(CameraStateInfo::NORMAL, "实时视频录制正常"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::UNNORMAL, "实时视频录制异常"); //向map里添加一对“键-值”
+
 }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
@@ -65,7 +71,6 @@ void StreamMonitor::doParseXml(QString xml)
             switch (action.text().toInt())
             {
             case 1:
-                break;
             case 2:         //add
             {
                 if(!camerasInfo.contains(camInfo))
@@ -224,7 +229,41 @@ void StreamMonitor::checkHisFile(CameraStateInfo &camera)
 {
         //检测规则?
     //有问题则返回给流媒体
+    QFile file(camera.hisVdSta.hisVdPath);
+    if(!file.exists())
+    {
+        camera.hisVdSta.state = HisVdFileState::NOT_EXIST;
+    }else if(!file.open(QIODevice::ReadOnly))
+    {
+        camera.hisVdSta.state=HisVdFileState::NOT_OPEN;
+    }else
+    {
+        quint8 data[86];//先验证前86个字节
+        file.read((char*)data, sizeof(data));
+        if(data[0]==0&&data[1]==0&&data[14]==0&&data[15]==0&&data[32]==0&&data[33]==0&&data[62]==0&&
+            data[63]==0&&data[81]==0&&data[82]==0&&data[83]==0&&
+            data[2]==1&&data[16]==1&&data[34]==1&&data[64]==1&&data[84]==1&&
+            data[3]==0xba&&data[17]==0xbb&&data[35]==0xbc&&data[65]==0xe0&&(data[85]&0x1f)==7)
+        {
+            camera.hisVdSta.state=HisVdFileState::NORMAL;
+        }else
+            camera.hisVdSta.state=HisVdFileState::UNNORMAL;
+    }
+
 }
+
+void StreamMonitor::sendMsg(QString xml)
+{
+    QByteArray datas;
+     qint32 size=xml.length();
+    char data[4];
+    memset(data, 0, 4);
+    memcpy(data, &size, sizeof(qint32));
+    datas.append(QByteArray(data, 4));
+    datas.append(xml.toLatin1());
+    LocalClient::getInstance()->writeData(datas);
+}
+
 void StreamMonitor::sendDiskState()
 {
     QDomDocument doc;
@@ -237,54 +276,93 @@ void StreamMonitor::sendDiskState()
     QDomElement type = doc.createElement("TYPE");//<TYPE>
     type.setNodeValue(QString::number(Send_Disk_Info));
     message.appendChild(type);
-    QDomElement equip = doc.createElement("Equipment");//<Equipment>
-    message.appendChild(equip);
-    QDomElement status = doc.createElement("Status");//<Status>
-    status.setNodeValue(QString::number(diskInfo.state));
-    equip.appendChild(status);
+    for(int i=0; i<diskInfos.size(); i++)
+    {
+        QDomElement equip = doc.createElement("Equipment");//<Equipment>
+        message.appendChild(equip);
+        QDomElement mPath = doc.createElement("MPath");//<MPath>
+        mPath.setNodeValue(diskInfos[i].mountPath);
+        equip.appendChild(mPath);
+        QDomElement status = doc.createElement("Status");//<Status>
+        status.setNodeValue(QString::number(diskInfos[i].state));
+        equip.appendChild(status);
+    }
 
     QString diskXml = doc.toString();
-    QByteArray datas;
-     qint32 size=diskXml.length();
-    char data[4];
-    memset(data, 0, 4);
-    memcpy(data, &size, sizeof(qint32));
-    datas.append(QByteArray(data, 4));
-    datas.append(diskXml.toLatin1());
-    LocalClient::getInstance()->writeData(datas);
+    sendMsg(diskXml);
 }
 
 void StreamMonitor::monitorDiskInfo()
 {
     //1.检测硬盘是否可以创建文件
-    QFile file(QReadConfig::getInstance()->getDiskCong().tmpFilePath);
-     if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))
-     {
-        cout<<"创建文件:"<<QReadConfig::getInstance()->getDiskCong().tmpFilePath.toStdString()<<"失败"<<endl;
-        diskInfo.state = DiskStateInfo::CAN_NOT_CREATE_FILE;
-        //send msg to stream Service;
-        sendDiskState();
-        return;
-     }else
-     {
-         QTextStream in(&file);
-         in<<"this is a test file"<<"\n";
-         file.close();
-         QFile::remove(QReadConfig::getInstance()->getDiskCong().tmpFilePath);
-         diskInfo.state = DiskStateInfo::DISK_NORMAL;
-         sendDiskState();
-         return;
-     }
-
-     //2.检测硬盘是否挂载
-
-     //3.检测硬盘是否满溢--调用张震接口
-
-    ////////////////////////////////////////////////////////////
-     diskInfo.state = DiskStateInfo::DISK_NORMAL;
-     sendDiskState();
+    diskInfos.clear();
+    for(int i=0; i<QReadConfig::getInstance()->getDiskCong().diskPaths.size(); i++)
+    {
+        DiskStateInfo disk;
+        disk.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
+        QFileInfo fileInfo(disk.mountPath);
+        QString fileName = disk.mountPath[disk.mountPath.length()-1]=='/'? disk.mountPath+"test":disk.mountPath+"/test";
+        QFile file(fileName);
+        bool isOver = false; //磁盘是否满，需张震接口获取
+        if(!fileInfo.isDir())       //加载目录是否存在判断硬盘是否加载
+        {
+            disk.state = DiskStateInfo::CAN_NOT_MOUNT;
+        }else if(isOver)
+        {
+            disk.state = DiskStateInfo::DISK_OVER_LOAD;
+        }else if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))         //是否能打开
+        {
+            cout<<"创建文件:"<<fileName.toStdString()<<"失败"<<endl;
+            disk.state = DiskStateInfo::CAN_NOT_CREATE_FILE;
+        }else{
+            QTextStream in(&file);
+            in<<"this is a test file"<<"\n";
+            file.close();
+            QFile::remove(fileName);
+            disk.state = DiskStateInfo::DISK_NORMAL;
+        }
+        diskInfos.append(disk);
+    }
+    sendDiskState();        //发送硬盘状态信息
      return;
 }
+ QString StreamMonitor::getFileName(QString cmeraId)
+ {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName("NEW_AR_POI.sqlite"); // 数据库名与路径, 此时是放在同目录下
+        if(db.open())
+        {
+            QSqlQuery query;
+            if (query.exec(QString("select * from  ")+cmeraId))   //尝试列出  表的所有记录
+            {
+                return "/tmp/2016-05-20/241241/1463737497.ps";
+            }
+        }else
+            return "null";
+ }
+
+  void StreamMonitor::sendRelVdRecState(QString cameraId)
+  {
+      QDomDocument doc;
+      QDomProcessingInstruction instruction;
+      instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+      doc.appendChild(instruction);
+
+      QDomElement message = doc.createElement("message");  //<message>
+      doc.appendChild(message);
+      QDomElement type = doc.createElement("TYPE");//<TYPE>
+      type.setNodeValue(QString::number(Send_Rec_State));
+      message.appendChild(type);
+
+      QDomElement equip = doc.createElement("Equipment");//<Equipment>
+      message.appendChild(equip);
+      QDomElement camid = doc.createElement("CAMID ");//<CAMID >
+      camid.setNodeValue(cameraId);
+      equip.appendChild(camid);
+
+      QString relVdRecXml = doc.toString();
+      sendMsg(relVdRecXml);
+  }
 
 void StreamMonitor::monitorCamera()
 {
@@ -297,9 +375,22 @@ void StreamMonitor::monitorCamera()
         {
             if(camerasInfo.at(i).online)
             {
-                //判断摄像机是否在录制文件
-                //将录制状态计入内存
+                 //将录制状态计入内存
                 //若不能录制，重启录制进程(录制进程如何获取？)
+                QString recingFilePath = getFileName(camerasInfo.at(i).cmareId);
+                QFileInfo fileInfo(recingFilePath);
+                if(fileInfo.exists())
+                {
+                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))>120)  //修改时间在两分钟内
+                    {
+                        camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
+                        //有问题，通知流媒体，重启线程
+                        sendRelVdRecState(camerasInfo.at(i).cmareId);
+                    }else
+                    {
+                        camerasInfo[i].relVdSta = CameraStateInfo::NORMAL;
+                    }
+                }
             }
         }
    }
@@ -308,7 +399,7 @@ void StreamMonitor::monitorCamera()
 
 void StreamMonitor::printDiskInfo()
 {
-    cout<<"当前硬盘状态:"<<diskErrInfoMap.value(diskInfo.state).toStdString()<<endl;
+   // cout<<"当前硬盘状态:"<<diskErrInfoMap.value(diskInfo.state).toStdString()<<endl;
 }
 
 void StreamMonitor::printInfo()

@@ -26,17 +26,20 @@ class StreamMonitor : public QObject
     enum SendMsgType
     {
         Send_Disk_Info=5,
-
+        Send_Rec_State=6,               //录制状态
     };
 
 public:
     explicit StreamMonitor(QObject *parent = 0);
 
     void checkHisFile(CameraStateInfo &camera);//检查历史文件是否有问题
+
+    void sendMsg(QString xml);
     void sendDiskState();                       //硬盘有问题，返回消息
     void sendHisFileState();                    //历史文件有问题，返回消息
-    void sendRelVdRecState();               //当前录制文件有问题，返回消息
+    void sendRelVdRecState(QString cameraId);               //当前录制文件有问题，返回消息
 
+    QString getFileName(QString cmeraId);                       //读取数据库，获取当前录制的视频文件路径
 
     void monitorDiskInfo();
 
@@ -49,7 +52,7 @@ public slots:
     void monitorCamera();
 
 private:
-    DiskStateInfo  diskInfo;                         //硬盘信息状态
+    QList<DiskStateInfo>  diskInfos;                         //硬盘信息状态
     QList<CameraStateInfo> camerasInfo;//摄像机信息状态
     QList<ThreadStateInfo>  threadsInfo; //所有线程的状态信息
     QMap<int, QString>    diskErrInfoMap;       //存放错误码与错误信息的映射
