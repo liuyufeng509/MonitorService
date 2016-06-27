@@ -24,6 +24,7 @@ public:
 
 protected:
     void run();
+    void init();
 signals:
    // void done();
 

@@ -3,17 +3,21 @@
 
 StreamMonitorThread::StreamMonitorThread(QObject *parent)
 {
-            //创建线程对象时，先把socket监听起来
-    LocalServer::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().serverName);
-    LocalServer::getInstance()->listen();
 
-    LocalClient::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().clientName);
-    LocalClient::getInstance()->requestConnection();
+}
+void StreamMonitorThread::init()
+{
+    //创建线程对象时，先把socket监听起来
+LocalServer::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().serverName);
+LocalServer::getInstance()->listen();
 
+LocalClient::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().clientName);
+LocalClient::getInstance()->requestConnection();
 }
 
 void StreamMonitorThread::run()
 {
+    init();
     streamMonitor = new StreamMonitor;
     CommandLine::getInstance()->setStreamMonitor(streamMonitor);            //便于访问监控数据结果
     //接收socketserver中的xml协议，转发到streamMonitor中进行解析处理

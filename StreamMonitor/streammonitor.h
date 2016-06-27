@@ -39,12 +39,13 @@ public:
     void sendHisFileState();                    //历史文件有问题，返回消息
     void sendRelVdRecState(QString cameraId);               //当前录制文件有问题，返回消息
 
-    QString getFileName(QString cmeraId);                       //读取数据库，获取当前录制的视频文件路径
+    QString getFileName(QString cmeraId);                       //读取数据库，获取当前录制的视频文件路径(索引中距离当前时间点最近的记录即当前录制的文件)
 
     void monitorDiskInfo();
 
     void printInfo();
     void printDiskInfo();
+    void printCameraInfo();
 signals:
 
 public slots:

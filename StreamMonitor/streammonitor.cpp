@@ -25,7 +25,7 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
 
     relVdRecErrInfoMap.insert(CameraStateInfo::NORMAL, "实时视频录制正常"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::UNNORMAL, "实时视频录制异常"); //向map里添加一对“键-值”
-
+    relVdRecErrInfoMap.insert(CameraStateInfo::NOT_EXIST, "实时视频不存在"); //向map里添加一对“键-值”
 }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
@@ -70,7 +70,7 @@ void StreamMonitor::doParseXml(QString xml)
             cout<<"cameraId="<<cameraId.text().toStdString()<<endl;
             switch (action.text().toInt())
             {
-            case 1:
+            case 1:         //init
             case 2:         //add
             {
                 if(!camerasInfo.contains(camInfo))
@@ -274,17 +274,20 @@ void StreamMonitor::sendDiskState()
     QDomElement message = doc.createElement("message");  //<message>
     doc.appendChild(message);
     QDomElement type = doc.createElement("TYPE");//<TYPE>
-    type.setNodeValue(QString::number(Send_Disk_Info));
+    QDomText typeContent = doc.createTextNode(QString::number(Send_Disk_Info));
+    type.appendChild(typeContent);
     message.appendChild(type);
     for(int i=0; i<diskInfos.size(); i++)
     {
         QDomElement equip = doc.createElement("Equipment");//<Equipment>
         message.appendChild(equip);
         QDomElement mPath = doc.createElement("MPath");//<MPath>
-        mPath.setNodeValue(diskInfos[i].mountPath);
+        QDomText mPath_str= doc.createTextNode(diskInfos[i].mountPath);
+        mPath.appendChild(mPath_str);
         equip.appendChild(mPath);
         QDomElement status = doc.createElement("Status");//<Status>
-        status.setNodeValue(QString::number(diskInfos[i].state));
+        QDomText status_str = doc.createTextNode(QString::number(diskInfos[i].state));
+        status.appendChild(status_str);
         equip.appendChild(status);
     }
 
@@ -328,17 +331,20 @@ void StreamMonitor::monitorDiskInfo()
 }
  QString StreamMonitor::getFileName(QString cmeraId)
  {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-        db.setDatabaseName("NEW_AR_POI.sqlite"); // 数据库名与路径, 此时是放在同目录下
-        if(db.open())
-        {
-            QSqlQuery query;
-            if (query.exec(QString("select * from  ")+cmeraId))   //尝试列出  表的所有记录
-            {
-                return "/tmp/2016-05-20/241241/1463737497.ps";
-            }
-        }else
-            return "null";
+//        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+//        db.setDatabaseName("NEW_AR_POI.sqlite"); // 数据库名与路径, 此时是放在同目录下
+//        if(db.open())
+//        {
+//            QSqlQuery query;
+//            if (query.exec(QString("select * from  ")+cmeraId))   //尝试列出  表的所有记录
+//            {
+//                return "/tmp/2016-05-20/241241/1463737497.ps";
+//            }else
+//                return "null";
+//        }else
+//            return "null";
+
+      return "/home/liuyufeng/testvd/1463737497.ps";
  }
 
   void StreamMonitor::sendRelVdRecState(QString cameraId)
@@ -351,13 +357,15 @@ void StreamMonitor::monitorDiskInfo()
       QDomElement message = doc.createElement("message");  //<message>
       doc.appendChild(message);
       QDomElement type = doc.createElement("TYPE");//<TYPE>
-      type.setNodeValue(QString::number(Send_Rec_State));
+      QDomText typeStr = doc.createTextNode(QString::number(Send_Rec_State));
+      type.appendChild(typeStr);
       message.appendChild(type);
 
       QDomElement equip = doc.createElement("Equipment");//<Equipment>
       message.appendChild(equip);
       QDomElement camid = doc.createElement("CAMID ");//<CAMID >
-      camid.setNodeValue(cameraId);
+      QDomText camidStr = doc.createTextNode(cameraId);
+      camid.appendChild(camidStr);
       equip.appendChild(camid);
 
       QString relVdRecXml = doc.toString();
@@ -381,7 +389,7 @@ void StreamMonitor::monitorCamera()
                 QFileInfo fileInfo(recingFilePath);
                 if(fileInfo.exists())
                 {
-                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))>120)  //修改时间在两分钟内
+                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))<120)  //修改时间在两分钟内
                     {
                         camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
                         //有问题，通知流媒体，重启线程
@@ -399,7 +407,21 @@ void StreamMonitor::monitorCamera()
 
 void StreamMonitor::printDiskInfo()
 {
-   // cout<<"当前硬盘状态:"<<diskErrInfoMap.value(diskInfo.state).toStdString()<<endl;
+    for(int i=0; i<diskInfos.size(); i++)
+    {
+         cout<<"路径为"<<diskInfos[i].mountPath.toStdString()<<"的硬盘状态:"<<diskErrInfoMap.value(diskInfos[i].state).toStdString()<<endl;
+    }
+}
+
+void StreamMonitor::printCameraInfo()
+{
+    for(int i=0; i<camerasInfo.size(); i++)
+    {
+        cout<<"*****************camera:"<<camerasInfo[i].cmareId.toStdString()<<" info***********"<<endl;
+        cout<<"在线状态:"<<(camerasInfo[i].online? "在线":"不在线")<<endl;
+        cout<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta].toStdString()<<endl;
+        cout<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath.toStdString()<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state].toStdString()<<endl;
+    }
 }
 
 void StreamMonitor::printInfo()

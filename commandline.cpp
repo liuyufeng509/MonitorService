@@ -37,7 +37,8 @@ void CommandLine::lsDisk()
 
 void CommandLine::lsCamera()
 {
-    cout<<"list camera info"<<endl;
+    cout<<"***********list camera info***********"<<endl;
+    streamMonitor->printCameraInfo();
 }
 
 void CommandLine::lsDB()

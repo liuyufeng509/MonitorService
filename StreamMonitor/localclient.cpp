@@ -4,15 +4,18 @@ using namespace std;
 LocalClient* LocalClient::m_pInstance = NULL;
 LocalClient::LocalClient():socket(NULL)
 {
-    socket = new QLocalSocket;
-    connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
-            this, SLOT(displayError(QLocalSocket::LocalSocketError)));
-    connect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
+//    socket = new QLocalSocket;
+//    connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
+//            this, SLOT(displayError(QLocalSocket::LocalSocketError)));
+//    connect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
 }
 
 void LocalClient::disConnected()
 {
     cout<<"connection disconnected"<<endl;
+    disconnect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
+            this, SLOT(displayError(QLocalSocket::LocalSocketError)));
+    disconnect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
     socket->deleteLater();
     socket = NULL;
     isConnected = false;
@@ -20,6 +23,13 @@ void LocalClient::disConnected()
 
 void LocalClient::requestConnection()
 {
+    if(socket == NULL)
+    {
+        socket = new QLocalSocket;
+        connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
+                this, SLOT(displayError(QLocalSocket::LocalSocketError)));
+        connect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
+    }
     socket->connectToServer(m_servName);
     if(socket->state()==QLocalSocket::ConnectedState)
     {
@@ -34,13 +44,14 @@ void LocalClient::requestConnection()
 void LocalClient::writeData(QByteArray data)
 {
     //if(isConnected)
-    if(socket->state()!=QLocalSocket::UnconnectedState && socket->state()!=QLocalSocket::ConnectingState)
+    if(isConnected)
     {
         socket->write(data);
         cout<<"发送数据："<<QString(data).toStdString()<<endl;
     }else
     {
-        cout<<"LocalClient writeData err"<<socket->errorString().toStdString()<<endl;
+       // cout<<"LocalClient writeData err"<<socket->errorString().toStdString()<<" 请求连接" <<endl;
+        requestConnection();
     }
 }
 
