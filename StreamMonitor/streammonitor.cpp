@@ -399,6 +399,9 @@ void StreamMonitor::monitorCamera()
                         camerasInfo[i].relVdSta = CameraStateInfo::NORMAL;
                     }
                 }
+            }else
+            {
+                 camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
             }
         }
    }
