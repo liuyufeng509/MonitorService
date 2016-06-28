@@ -48,7 +48,8 @@ struct CameraStateInfo
     enum RelVdState{
         NORMAL,
         UNNORMAL,
-        NOT_EXIST
+        NOT_EXIST,
+        NOT_ONLINE
     };
     QString  cmareId;
     bool       online;

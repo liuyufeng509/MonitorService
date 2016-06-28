@@ -26,6 +26,7 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
     relVdRecErrInfoMap.insert(CameraStateInfo::NORMAL, "实时视频录制正常"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::UNNORMAL, "实时视频录制异常"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::NOT_EXIST, "实时视频不存在"); //向map里添加一对“键-值”
+    relVdRecErrInfoMap.insert(CameraStateInfo::NOT_ONLINE, "该摄像机不在线"); //向map里添加一对“键-值”
 }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
@@ -401,7 +402,7 @@ void StreamMonitor::monitorCamera()
                 }
             }else
             {
-                 camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
+                 camerasInfo[i].relVdSta = CameraStateInfo::NOT_ONLINE;
             }
         }
    }
