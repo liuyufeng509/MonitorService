@@ -10,9 +10,14 @@
 #include<math.h>
 #include<QSqlQuery>
 #include<QDateTime>
+
+#include"intcommon/intcommon.nsmap"
+#include"intcommon/soapintcommonProxy.h"
+#include "intcommon/stdsoap2.h"
+
 using namespace std;
 
-StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
+StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0)
 {
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_CREATE_FILE, "不能创建文件"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_WRITE_FILE, "不能写入文件"); //向map里添加一对“键-值”
@@ -27,6 +32,14 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent)
     relVdRecErrInfoMap.insert(CameraStateInfo::UNNORMAL, "实时视频录制异常"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::NOT_EXIST, "实时视频不存在"); //向map里添加一对“键-值”
     relVdRecErrInfoMap.insert(CameraStateInfo::NOT_ONLINE, "该摄像机不在线"); //向map里添加一对“键-值”
+
+    relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::NORMAL,"视频调看成功");
+    relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::SSLFAIL,"ssl证书加载失败");
+    relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::UNORMAL,"视频调看失败");
+
+    relRqTimer = new QTimer(this);
+
+    connect(relRqTimer, SIGNAL(timeout()), this, SLOT(relVdReqWithTimer()));
 }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
@@ -69,6 +82,9 @@ void StreamMonitor::doParseXml(QString xml)
             CameraStateInfo camInfo;
             camInfo.cmareId = cameraId.text();
             cout<<"cameraId="<<cameraId.text().toStdString()<<endl;
+            QDomElement udpAddr = equipment.lastChildElement();  //<UDP>
+            camInfo.udpAddr = udpAddr.text();
+            cout<<"udpAddr="<<udpAddr.text().toStdString()<<endl;
             switch (action.text().toInt())
             {
             case 1:         //init
@@ -373,6 +389,107 @@ void StreamMonitor::monitorDiskInfo()
       sendMsg(relVdRecXml);
   }
 
+  int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
+  {
+      //初始化gsoap对象
+      intcommonProxy p;
+      p.soap_endpoint = QReadConfig::getInstance()->getGsoapInfoConf().soapEndpoint.toStdString().c_str();
+      p.send_timeout=QReadConfig::getInstance()->getGsoapInfoConf().sendTimeout;
+      p.recv_timeout=QReadConfig::getInstance()->getGsoapInfoConf().recvTimeout;
+      p.connect_timeout=QReadConfig::getInstance()->getGsoapInfoConf().connTimeout;
+      p.userid = QReadConfig::getInstance()->getGsoapInfoConf().userID.toStdString().c_str();
+      p.passwd = QReadConfig::getInstance()->getGsoapInfoConf().passwd.toStdString().c_str();
+
+  #if defined(WITH_OPENSSL)
+      soap_ssl_init();
+      if ( soap_ssl_client_context(&p, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL) )
+      {
+          p.soap_stream_fault(std::cerr);
+          cout<<"加载客户端证书失败。"<<endl;
+          return 110;
+      }
+  #endif
+
+      ns__HBUSERINFO nsUserInfo;
+      nsUserInfo.strUser="test";
+      nsUserInfo.nPermission=1;
+      nsUserInfo.nCtrlTimeOut=30;
+
+      struct ns__HBNET_VIDEO_STREAM VideoStream;
+      VideoStream.szDescription = (char*)soap_malloc(&p, 256);
+      strcpy(VideoStream.szDescription, camera.udpAddr.toStdString().c_str());
+
+      if(SOAP_OK==p.SwitchCameraToStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&VideoStream))
+      {
+          cout<<"摄像机"<<camera.cmareId.toStdString()<<"实时视频调看成功,释放请求"<<endl;
+          ns__Response res;
+          p.AbandonCameraStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&res);
+          cout<<"retcode="<<res.retcode<<" strMessage="<<res.strMessage<<endl;
+          return 0;
+      }else
+      {
+          cout<<"摄像机"<<camera.cmareId.toStdString()<<"实时视频调看失败,释放请求"<<endl;
+          p.soap_stream_fault(std::cerr);
+          return 1;
+      }
+    return 0;
+  }
+
+ void StreamMonitor::relVdReqWithTimer()
+ {
+    if(relReqCount==3)
+    {
+        relRqTimer->stop();
+        relReqCount=0;
+        if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+        {
+            //重启流媒体进程
+            cout<<"3次失败,重启流媒体进程"<<endl;
+        }
+    }else
+    {
+        for(int i=0; i<camerasInfo.size(); i++)
+        {
+            if(camerasInfo[i].online)
+            {
+                relAndHisVdReqStat.relVdReq = monitorRelVdWithGsoap(camerasInfo[i]);
+                if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+                {
+                   relReqCount++;
+                }else
+                {
+                   relReqCount=0;
+                   relRqTimer->stop();
+                }
+                break;
+            }
+        }
+    }
+ }
+
+ void StreamMonitor::monitorRelAndHisVdReq()
+  {
+      //1.实时视频调看，通过gsoap接口调看
+     if(relReqCount==0)                       //判断如果count不为0，说明正在用定时器重复请求中，此次不请求
+     {
+         for(int i=0; i<camerasInfo.size(); i++)
+         {
+             if(camerasInfo[i].online)
+             {
+                 relAndHisVdReqStat.relVdReq = monitorRelVdWithGsoap(camerasInfo[i]);
+                 if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+                 {
+                    relRqTimer->start(2000);
+                 }else
+                     relReqCount=0;
+                 break;
+             }
+         }
+     }
+
+     //2.历史视频调看
+  }
+
 void StreamMonitor::monitorCamera()
 {
    if( QReadConfig::getInstance()->getCameraSvrConf().bOpen)
@@ -426,6 +543,17 @@ void StreamMonitor::printCameraInfo()
         cout<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta].toStdString()<<endl;
         cout<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath.toStdString()<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state].toStdString()<<endl;
     }
+}
+void StreamMonitor::printRelVdReqInfo()
+{
+    cout<<"*****************real Vedio request info***********"<<endl;
+    cout<<"实时视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.relVdReq].toStdString()<<endl;
+}
+
+void StreamMonitor::printHisVdReqInfo()
+{
+    cout<<"*****************his Vedio request info***********"<<endl;
+    cout<<"历史视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.hisVdReq].toStdString()<<endl;
 }
 
 void StreamMonitor::printInfo()

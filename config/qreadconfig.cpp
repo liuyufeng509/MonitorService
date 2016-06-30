@@ -49,6 +49,13 @@ void QReadConfig::readConfigFile(QString filePath)
     relAndHisVideoConf.bOpen = configIniRead->value("RelAndHis/open").toBool();
     relAndHisVideoConf.timer = configIniRead->value("RelAndHis/timer").toInt();
 
+    gsoapConf.soapEndpoint = configIniRead->value("gsoapInfo/soap_endpoint").toString();
+    gsoapConf.sendTimeout = configIniRead->value("gsoapInfo/send_timeout").toInt();
+    gsoapConf.recvTimeout = configIniRead->value("gsoapInfo/recv_timeout").toInt();
+    gsoapConf.connTimeout = configIniRead->value("gsoapInfo/connect_timeout").toInt();
+    gsoapConf.userID = configIniRead->value("gsoapInfo/userid").toString();
+    gsoapConf.passwd = configIniRead->value("gsoapInfo/passwd").toString();
+
     delete configIniRead;
 }
 
@@ -148,6 +155,11 @@ RelAndHisVideoConfig QReadConfig::getRelAndHisVidConf()
 DomainSockConfig     QReadConfig::getDomainSockConf()
 {
     return domainSockConf;
+}
+
+GsoapConfig QReadConfig::getGsoapInfoConf()
+{
+    return gsoapConf;
 }
 
 QReadConfig::~QReadConfig()

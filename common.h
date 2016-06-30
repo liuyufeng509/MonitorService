@@ -36,7 +36,7 @@ struct HisVdFileState
 struct CameraStateInfo
 {
 
-    CameraStateInfo():cmareId(""),online(false),relVdSta(NORMAL)
+    CameraStateInfo():cmareId(""),online(false),relVdSta(NORMAL),udpAddr("")
     {
 
     }
@@ -52,6 +52,7 @@ struct CameraStateInfo
         NOT_ONLINE
     };
     QString  cmareId;
+    QString  udpAddr;           //组播地址
     bool       online;
     int          relVdSta;      //正在录制的视频信息
     HisVdFileState hisVdSta;    //历史文件信息
@@ -77,6 +78,23 @@ struct ThreadStateInfo
     QString     threadId;
     int             action;             //1 http线程 2：视频流线程 3：磁盘检测线程
     ThreadState state;
+};
+
+//流媒体服务器历史视频和实时视频能否调看
+struct RelAndHisVdReqStat
+{
+    RelAndHisVdReqStat():relVdReq(NORMAL), hisVdReq(NORMAL)
+    {
+
+    }
+
+    enum{
+        NORMAL=0,
+        UNORMAL=1,
+        SSLFAIL=110,
+    };
+    int             relVdReq;           //实时视频调看状态:0---实时视频调看成功  110--ssl证书加载失败 1--实时视频调看失败
+    int             hisVdReq;
 };
 
 #endif // COMMON_H

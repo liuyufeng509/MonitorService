@@ -69,6 +69,7 @@ void CommandLine::lsNet()
 void CommandLine::lsRelVedio()
 {
     cout<<"list RelVedio info"<<endl;
+    streamMonitor->printRelVdReqInfo();
 }
 
 void CommandLine::lsHisVedio()

@@ -129,4 +129,16 @@ struct DomainSockConfig
     QString         clientName;  //客户端名称
     int                 checkTimer;    //检测连接状态定时器
 };
+
+//gsoap config
+struct GsoapConfig
+{
+    QString    soapEndpoint;
+    int             sendTimeout;
+    int             recvTimeout;
+    int             connTimeout;
+    QString             userID;
+    QString             passwd;
+};
+
 #endif // DATADEFINE_H

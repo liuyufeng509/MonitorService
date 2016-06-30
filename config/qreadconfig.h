@@ -32,6 +32,7 @@ public:
     ProcessConfig    getProcConf();
     RelAndHisVideoConfig getRelAndHisVidConf();
     DomainSockConfig     getDomainSockConf();
+    GsoapConfig                getGsoapInfoConf();
 
     void readConfigFile(QString filePath);  //读取配置文件
 
@@ -61,6 +62,7 @@ private:
     ProcessConfig           procConf;
     RelAndHisVideoConfig    relAndHisVideoConf;
     DomainSockConfig        domainSockConf;
+    GsoapConfig                  gsoapConf;
 };
 
 #endif // QREADCONFIG_H

@@ -26,11 +26,17 @@ void StreamMonitorThread::run()
     cameraMonTimer = new QTimer;
     connect(cameraMonTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorCamera()));
     cameraMonTimer->start(QReadConfig::getInstance()->getCameraSvrConf().timer);
+
+    //2.摄像机实时视频调看
+    relAndHisVdReqTimer = new QTimer;
+    connect(relAndHisVdReqTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorRelAndHisVdReq()));
+    relAndHisVdReqTimer->start(QReadConfig::getInstance()->getRelAndHisVidConf().timer);
     exec();
 }
 
 StreamMonitorThread::~StreamMonitorThread()
 {
     delete cameraMonTimer;
+    delete relAndHisVdReqTimer;
     delete streamMonitor;
 }
