@@ -6,6 +6,9 @@
 #include<QMap>
 #include<QString>
 #include<QTimer>
+#include <QtNetwork>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 
 /**
  * @brief The StreamMonitor class
@@ -27,6 +30,7 @@ class StreamMonitor : public QObject
     };
     enum SendMsgType
     {
+        Send_HisVd_Req=4,               //历史视频调看
         Send_Disk_Info=5,
         Send_Rec_State=6,               //录制状态
     };
@@ -35,11 +39,13 @@ public:
     explicit StreamMonitor(QObject *parent = 0);
 
     void checkHisFile(CameraStateInfo &camera);//检查历史文件是否有问题
+    void checkHisURL(QString httpUrl);  //调看该url对应的历史视频
 
     void sendMsg(QString xml);
     void sendDiskState();                       //硬盘有问题，返回消息
-    void sendHisFileState();                    //历史文件有问题，返回消息
+    void sendHisFileState();                    //历史文件有问题，返回消息,此处先保留，上报运维即可
     void sendRelVdRecState(QString cameraId);               //当前录制文件有问题，返回消息
+    void sendHisVdRequest(QString cameraId);               //发送历史视频调看请求
 
     QString getFileName(QString cmeraId);                       //读取数据库，获取当前录制的视频文件路径(索引中距离当前时间点最近的记录即当前录制的文件)
 
@@ -51,6 +57,7 @@ public:
     void printCameraInfo();
     void printRelVdReqInfo();
     void printHisVdReqInfo();
+
 signals:
 
 public slots:
@@ -59,7 +66,10 @@ public slots:
     void monitorRelAndHisVdReq();       //实时视频和历史视频调看监控
 
     void relVdReqWithTimer();               //利用定时器重复请求实时视频调看,达到3次或者成功为止
-
+    void hisVdReqWithTimer();               //利用定时器重复请求历史视频调看,达到3次或者成功为止
+private slots:
+    void httpReadyRead();//接受到数据时的处理
+    void httpFinished();//完成下载后处理
 private:
     QList<DiskStateInfo>  diskInfos;                         //硬盘信息状态
     QList<CameraStateInfo> camerasInfo;         //摄像机信息状态
@@ -73,6 +83,16 @@ private:
     //视频调看相关,请求失败，则需要请求3次
     int   relReqCount;          //实时视频请求调看的次数
     QTimer * relRqTimer;        //实时视频请求调看计时器
+
+    //QNetworkAccessManager类用于发送网络请求和接受回复，
+    //具体的，它是用QNetworkRequest 类来管理请求，
+    //QNetworkReply类进行接收回复，并对数据进行处理。
+    QNetworkAccessManager * manager;
+    QNetworkReply * reply;
+    QNetworkRequest qheader;
+
+    int   hisReqCount;               //历史视频请求调看的次数
+    QTimer * hisRqTimer;        //历史视频请求调看计时器
 };
 
 #endif // STREAMMONITOR_H

@@ -70,14 +70,17 @@ void QReadConfig::printInfo()
     cout<<"******************DomainSockConfig*********************"<<endl;
     cout<<"domainSockConf.servername="<<domainSockConf.serverName.toStdString()<<endl;
     cout<<"domainSockConf.clientname="<<domainSockConf.clientName.toStdString()<<endl;
+    cout<<"domainSockConf.checkTimer="<<domainSockConf.checkTimer<<endl;
 
     cout<<"******************CameraSvrConfig*********************"<<endl;
     cout<<"cameraSvrConf.bOpen="<<cameraSvrConf.bOpen<<endl;
     cout<<"cameraSvrConf.nTimer="<<cameraSvrConf.timer<<endl;
+    cout<<"cameraSvrConf.vdPath="<<cameraSvrConf.vdPath.toStdString()<<endl;
 
     cout<<"******************DBSvrConfig*********************"<<endl;
     cout<<"dbSvrConf.bOpen="<<dbSvrConf.bOpen<<endl;
     cout<<"dbSvrConf.nTimer="<<dbSvrConf.timer<<endl;
+    cout<<"dbSvrConf.dbName="<<dbSvrConf.dbName.toStdString()<<endl;
 
     cout<<"******************ThreadSvrConfig*********************"<<endl;
     cout<<"threadSvrConf.bOpen="<<threadSvrConf.bOpen<<endl;
@@ -106,6 +109,14 @@ void QReadConfig::printInfo()
     cout<<"******************RelAndHisVideoConfig*********************"<<endl;
     cout<<"relAndHisVideoConf.bOpen="<<relAndHisVideoConf.bOpen<<endl;
     cout<<"relAndHisVideoConf.nTimer="<<relAndHisVideoConf.timer<<endl;
+
+    cout<<"******************gsoapConf*********************"<<endl;
+    cout<<"gsoapConf.soapEndpoint="<<gsoapConf.soapEndpoint.toStdString()<<endl;
+    cout<<"gsoapConf.sendTimeout="<<gsoapConf.sendTimeout<<endl;
+    cout<<"gsoapConf.recvTimeout="<<gsoapConf.recvTimeout<<endl;
+    cout<<"gsoapConf.connTimeout="<<gsoapConf.connTimeout<<endl;
+    cout<<"gsoapConf.userID="<<gsoapConf.userID.toStdString()<<endl;
+    cout<<"gsoapConf.passwd="<<gsoapConf.passwd.toStdString()<<endl;
 
 }
 

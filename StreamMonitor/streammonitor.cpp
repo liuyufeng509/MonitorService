@@ -17,7 +17,7 @@
 
 using namespace std;
 
-StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0)
+StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),hisReqCount(0)
 {
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_CREATE_FILE, "不能创建文件"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_WRITE_FILE, "不能写入文件"); //向map里添加一对“键-值”
@@ -38,8 +38,13 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0)
     relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::UNORMAL,"视频调看失败");
 
     relRqTimer = new QTimer(this);
-
     connect(relRqTimer, SIGNAL(timeout()), this, SLOT(relVdReqWithTimer()));
+
+    hisRqTimer = new QTimer(this);
+    connect(hisRqTimer, SIGNAL(timeout()), this, SLOT(hisVdReqWithTimer()));
+
+
+    manager = new QNetworkAccessManager(this);      // url request manager
 }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
@@ -231,8 +236,9 @@ void StreamMonitor::doParseXml(QString xml)
             QDomNode eqNode = equipments.item(i);
             QDomElement equipment = eqNode.toElement();         //<EquipMent>
             QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            QDomElement status = equipment.lastChildElement();          //<Status>
-            cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+            QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
+            cout<<"cameraId="<<cameraId.text().toStdString()<<" httpurl(0 normal)="<<httpurl.text().toInt()<<endl;
+            checkHisURL(httpurl.text());
         }
     }
         break;
@@ -434,7 +440,31 @@ void StreamMonitor::monitorDiskInfo()
       }
     return 0;
   }
-
+void StreamMonitor::hisVdReqWithTimer()
+{
+    if(hisReqCount==3)
+    {
+       hisRqTimer ->stop();
+        hisReqCount=0;
+        if(relAndHisVdReqStat.hisVdReq==RelAndHisVdReqStat::UNORMAL)
+        {
+            //重启流媒体进程
+            cout<<"3次历史视频调看失败,重启流媒体进程"<<endl;
+        }
+    }else
+    {
+        for(int i=0; i<camerasInfo.size(); i++)
+        {
+            if(camerasInfo[i].online)
+            {
+                sendHisVdRequest(camerasInfo[i].cmareId);
+                hisReqCount++;
+                cout<<"the "<<hisReqCount<<" time to request his vd"<<endl;
+                break;
+            }
+        }
+    }
+}
  void StreamMonitor::relVdReqWithTimer()
  {
     if(relReqCount==3)
@@ -467,6 +497,74 @@ void StreamMonitor::monitorDiskInfo()
     }
  }
 
+ void StreamMonitor::sendHisVdRequest(QString cameraId)
+ {
+     QDomDocument doc;
+     QDomProcessingInstruction instruction;
+     instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+     doc.appendChild(instruction);
+
+     QDomElement message = doc.createElement("message");  //<message>
+     doc.appendChild(message);
+     QDomElement type = doc.createElement("TYPE");//<TYPE>
+     QDomText typeStr = doc.createTextNode(QString::number(Send_HisVd_Req));
+     type.appendChild(typeStr);
+     message.appendChild(type);
+
+     QDomElement equip = doc.createElement("Equipment");//<Equipment>
+     message.appendChild(equip);
+     QDomElement camid = doc.createElement("CAMID ");//<CAMID >
+     QDomText camidStr = doc.createTextNode(cameraId);
+     camid.appendChild(camidStr);
+     equip.appendChild(camid);
+
+     QString relVdRecXml = doc.toString();
+     sendMsg(relVdRecXml);
+ }
+
+void StreamMonitor::checkHisURL(QString httpUrl)
+{
+    qheader.setUrl(httpUrl);
+    long int DownedSize = 86;       //只需要下载文件的前86个字节即可
+    QString Range="bytes "+QString::number(DownedSize)+"-";//告诉服务器从DownedSize起开始传输
+    qheader.setRawHeader("Range",Range.toLatin1());
+
+    reply = manager->get(QNetworkRequest(qheader));
+
+    //关联下载完成后的信号和槽
+    connect(reply,SIGNAL(finished()),this,SLOT(httpFinished()));
+    //关联有可用数据是的信号和槽
+    connect(reply,SIGNAL(readyRead()),this,SLOT(httpReadyRead()));
+}
+
+//接收历史调看视频文件
+void StreamMonitor::httpReadyRead()
+{
+    QByteArray data = reply->read(100);
+    cout<<"recv his Vd Data"<<data.toHex().toStdString()<<endl;
+    if(data[0]==0&&data[1]==0&&data[14]==0&&data[15]==0&&data[32]==0&&data[33]==0&&data[62]==0&&
+        data[63]==0&&data[81]==0&&data[82]==0&&data[83]==0&&
+        data[2]==1&&data[16]==1&&data[34]==1&&data[64]==1&&data[84]==1&&
+        data[3]==0xba&&data[17]==0xbb&&data[35]==0xbc&&data[65]==0xe0&&(data[85]&0x1f)==7)
+    {
+        relAndHisVdReqStat.hisVdReq = RelAndHisVdReqStat::NORMAL;
+        hisReqCount=0;
+        hisRqTimer->stop();
+    }else
+    {
+        relAndHisVdReqStat.hisVdReq = RelAndHisVdReqStat::UNORMAL;
+        if(hisReqCount==0)
+            hisRqTimer->start(2000);
+        else
+            hisReqCount++;
+    }
+}
+
+void StreamMonitor::httpFinished()
+{
+    reply->deleteLater();
+}
+
  void StreamMonitor::monitorRelAndHisVdReq()
   {
       //1.实时视频调看，通过gsoap接口调看
@@ -488,6 +586,16 @@ void StreamMonitor::monitorDiskInfo()
      }
 
      //2.历史视频调看
+     //发送历史视频调看请求
+     for(int i=0; i<camerasInfo.size(); i++)
+     {
+         if(camerasInfo[i].online)
+         {
+            sendHisVdRequest(camerasInfo[i].cmareId);
+            break;
+         }
+     }
+
   }
 
 void StreamMonitor::monitorCamera()
