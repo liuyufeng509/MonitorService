@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 #include<QString>
-
+#include<QStringList>
 //硬盘状态信息，根据此信息判断是否进行自恢复和通知流媒体服务
 struct DiskStateInfo{
     enum DiskState{
@@ -95,6 +95,24 @@ struct RelAndHisVdReqStat
     };
     int             relVdReq;           //实时视频调看状态:0---实时视频调看成功  110--ssl证书加载失败 1--实时视频调看失败
     int             hisVdReq;
+};
+
+//数据库状态信息结构体
+struct DBStatusInfo
+{
+    DBStatusInfo():DBState(NORMAL)
+    {
+
+    }
+
+    enum{
+        NORMAL=0,
+        DB_OPEN_FAIL=1,
+        DB_LOST_TABLE=2,
+        DB_TABLE_LOCKED=3,
+    };
+    int DBState;
+    QStringList    lostTables;       //缺少的表
 };
 
 #endif // COMMON_H

@@ -10,6 +10,7 @@
 #include<math.h>
 #include<QSqlQuery>
 #include<QDateTime>
+#include<QSqlError>
 
 #include"intcommon/intcommon.nsmap"
 #include"intcommon/soapintcommonProxy.h"
@@ -36,6 +37,12 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
     relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::NORMAL,"视频调看成功");
     relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::SSLFAIL,"ssl证书加载失败");
     relHisVdReqErrInfoMap.insert(RelAndHisVdReqStat::UNORMAL,"视频调看失败");
+
+    DbStatusErrInfoMap.insert(DBStatusInfo::NORMAL, "数据库状态正常");
+    DbStatusErrInfoMap.insert(DBStatusInfo::DB_OPEN_FAIL, "数据库打开失败");
+    DbStatusErrInfoMap.insert(DBStatusInfo::DB_LOST_TABLE, "数据库表丢失");
+    DbStatusErrInfoMap.insert(DBStatusInfo::DB_TABLE_LOCKED, "数据库表锁定");
+
 
     relRqTimer = new QTimer(this);
     connect(relRqTimer, SIGNAL(timeout()), this, SLOT(relVdReqWithTimer()));
@@ -352,6 +359,39 @@ void StreamMonitor::monitorDiskInfo()
     sendDiskState();        //发送硬盘状态信息
      return;
 }
+void StreamMonitor::sendDbStatus()
+{
+    QDomDocument doc;
+    QDomProcessingInstruction instruction;
+    instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+    doc.appendChild(instruction);
+
+    QDomElement message = doc.createElement("message");  //<message>
+    doc.appendChild(message);
+    QDomElement type = doc.createElement("TYPE");//<TYPE>
+    QDomText typeContent = doc.createTextNode(QString::number(Send_DB_Info));
+    type.appendChild(typeContent);
+    message.appendChild(type);
+
+    QDomElement status = doc.createElement("STATUS ");//<STATUS>
+    message.appendChild(status);
+    QDomText status_str= doc.createTextNode(QString::number(dbStatusInfo.DBState));
+    status.appendChild(status_str);
+    if(dbStatusInfo.DBState==DBStatusInfo::DB_LOST_TABLE)
+    {
+        for(int i=0; i<dbStatusInfo.lostTables.size(); i++)
+        {
+            QDomElement equip = doc.createElement("Equipment");//<Equipment>
+            message.appendChild(equip);
+            QDomElement camID = doc.createElement("CAMID");     //<CAMID>
+            QDomText camid_str = doc.createTextNode(dbStatusInfo.lostTables[i]);
+            camID.appendChild(camid_str);
+        }
+    }
+    QString DbXml = doc.toString();
+    sendMsg(DbXml);
+}
+
  QString StreamMonitor::getFileName(QString cmeraId)
  {
 //        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -465,6 +505,80 @@ void StreamMonitor::hisVdReqWithTimer()
         }
     }
 }
+
+void StreamMonitor::monitorDBStatus()
+{
+    cout<<"monitoring DB status"<<endl;
+     dbStatusInfo.DBState = DBStatusInfo::NORMAL;
+    //1.判断能否打开数据库
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+        if(db.isOpen())
+        {
+            cout<<"db already opened"<<endl;
+            return;
+        }
+       db.setDatabaseName("NEW_AR_POI.sqlite"); // 数据库名与路径, 此时是放在同目录下
+       if(db.open())
+       {
+           QSqlQuery query;
+            //2. 测试表的完整性
+           QString tablesSql = "select name from sqlite_master where type='table' order by name";
+           QList<QString> tables;
+           if (query.exec(tablesSql))   //查询所有表
+           {
+                while(query.next())
+                {
+                    tables.append(query.value(0).toString());
+                }
+           }else
+           {
+               QString querys = query.lastError().text();
+               cout<<"get tables name: "<<querys.toStdString()<<endl;
+           }
+           QString cameraID="";
+           for(int i=0; i<camerasInfo.size(); i++)
+           {
+               if(!tables.contains(camerasInfo[i].cmareId))
+               {
+                   dbStatusInfo.DBState = DBStatusInfo::DB_LOST_TABLE;
+                   dbStatusInfo.lostTables.append(camerasInfo[i].cmareId);
+               }else
+                   cameraID = camerasInfo[i].cmareId;
+           }
+
+           //3.数据库读写状态监控
+           if(dbStatusInfo.DBState==DBStatusInfo::NORMAL)
+           {
+               QSqlQuery queryWrite;
+               QString insertSql = "insert into "+cameraID;
+               if(!queryWrite.exec(insertSql))
+               {
+                    dbStatusInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
+                    QString querys = queryWrite.lastError().text();
+                    cout<<querys.toStdString()<<endl;
+               }else
+               {
+                   //delete the rec insertted.
+                   QSqlQuery queryDelete;
+                   QString delSql = "delete from "+cameraID + " where id=";
+                   if(!queryDelete.exec())
+                   {
+                       dbStatusInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
+                       QString querys = queryDelete.lastError().text();
+                       cout<<querys.toStdString()<<endl;
+                   }
+               }
+           }
+           db.close();
+       }else
+       {
+           dbStatusInfo.DBState = DBStatusInfo::DB_OPEN_FAIL;
+       }
+
+       //send to stream
+       sendDbStatus();
+}
+
  void StreamMonitor::relVdReqWithTimer()
  {
     if(relReqCount==3)
@@ -609,7 +723,8 @@ void StreamMonitor::monitorCamera()
         {
             if(camerasInfo.at(i).online)
             {
-                 //将录制状态计入内存
+                //历史文件正确性检测，不是由监控主动发起，是由流媒体发送，出发监控进行监控,此处只检测当前录制的文件状态是否正常
+                 //将录制状态计入内存;
                 //若不能录制，重启录制进程(录制进程如何获取？)
                 QString recingFilePath = getFileName(camerasInfo.at(i).cmareId);
                 QFileInfo fileInfo(recingFilePath);
@@ -662,6 +777,20 @@ void StreamMonitor::printHisVdReqInfo()
 {
     cout<<"*****************his Vedio request info***********"<<endl;
     cout<<"历史视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.hisVdReq].toStdString()<<endl;
+}
+
+void StreamMonitor::printDbStatusInfo()
+{
+    cout<<"数据库状态"<<DbStatusErrInfoMap[dbStatusInfo.DBState].toStdString()<<endl;
+    if(dbStatusInfo.DBState==DBStatusInfo::DB_LOST_TABLE)
+    {
+        QString tablesInfo = "";
+        for(int i=0; i<dbStatusInfo.lostTables.size(); i++)
+        {
+            tablesInfo += dbStatusInfo.lostTables[i] + ",";
+        }
+        cout<< "丢失的表为:"<<tablesInfo.toStdString()<<endl;
+    }
 }
 
 void StreamMonitor::printInfo()

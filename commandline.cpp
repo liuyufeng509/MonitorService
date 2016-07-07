@@ -44,6 +44,7 @@ void CommandLine::lsCamera()
 void CommandLine::lsDB()
 {
     cout<<"list DataBase info"<<endl;
+    streamMonitor->printDbStatusInfo();
 }
 
 void CommandLine::lsThreads()

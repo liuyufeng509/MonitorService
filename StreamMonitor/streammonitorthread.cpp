@@ -31,6 +31,11 @@ void StreamMonitorThread::run()
     relAndHisVdReqTimer = new QTimer;
     connect(relAndHisVdReqTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorRelAndHisVdReq()));
     relAndHisVdReqTimer->start(QReadConfig::getInstance()->getRelAndHisVidConf().timer);
+
+    //数据库状态监视
+    dbMonitorTimer = new QTimer;
+    connect(dbMonitorTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorDBStatus()));
+    dbMonitorTimer->start(QReadConfig::getInstance()->getDBSvrConf().timer);
     exec();
 }
 
@@ -39,4 +44,5 @@ StreamMonitorThread::~StreamMonitorThread()
     delete cameraMonTimer;
     delete relAndHisVdReqTimer;
     delete streamMonitor;
+    delete dbMonitorTimer;
 }
