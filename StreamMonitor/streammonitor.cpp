@@ -43,6 +43,8 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
     DbStatusErrInfoMap.insert(DBStatusInfo::DB_LOST_TABLE, "数据库表丢失");
     DbStatusErrInfoMap.insert(DBStatusInfo::DB_TABLE_LOCKED, "数据库表锁定");
 
+    threadErrorInfoMap.insert(ThreadStateInfo::NORMAL, "线程正常");
+    threadErrorInfoMap.insert(ThreadStateInfo::Dead, "线程死亡");
 
     relRqTimer = new QTimer(this);
     connect(relRqTimer, SIGNAL(timeout()), this, SLOT(relVdReqWithTimer()));
@@ -52,7 +54,8 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
 
 
     manager = new QNetworkAccessManager(this);      // url request manager
-}
+
+ }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
 {
@@ -158,16 +161,21 @@ void StreamMonitor::doParseXml(QString xml)
             QDomNode eqNode = equipments.item(i);
             QDomElement equipment = eqNode.toElement();         //<EquipMent>
             QDomElement threadId = equipment.firstChildElement(); //<THRID>
-            QDomElement action = equipment.lastChildElement();          //<ACTION>
+            QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
+            QDomElement optType = equipment.lastChildElement();         //<OPTTYPE>
             ThreadStateInfo threadInfo;
             threadInfo.threadId = threadId.text();
             threadInfo.action = action.text().toInt();
             if(!threadsInfo.contains(threadInfo))
             {
-                threadsInfo.append(threadInfo);
+                if(optType.text().toInt()==1)
+                    threadsInfo.append(threadInfo);
             }else
             {
-                threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
+                if(optType.text().toInt()==2)           //1 add  2 delete
+                    threadsInfo.removeOne(threadInfo);
+                else
+                    threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
             }
             cout<<"threadId="<<threadId.text().toStdString()<<" action="<<action.text().toInt()<<endl;
         }
@@ -213,6 +221,14 @@ void StreamMonitor::doParseXml(QString xml)
             QDomElement equipment = eqNode.toElement();         //<EquipMent>
             QDomElement threadId = equipment.firstChildElement(); //<THRID>
             cout<<"threadId="<<threadId.text().toStdString()<<endl;
+            for(int j=0; j<threadsInfo.size(); j++)
+            {
+                if(threadsInfo[j].threadId == threadId.text())
+                {
+                    threadsInfo[j].heartime = time(NULL);
+                    break;
+                }
+            }
         }
     }
         break;
@@ -392,6 +408,34 @@ void StreamMonitor::sendDbStatus()
     sendMsg(DbXml);
 }
 
+void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
+{
+    QDomDocument doc;
+    QDomProcessingInstruction instruction;
+    instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+    doc.appendChild(instruction);
+
+    QDomElement message = doc.createElement("message");  //<message>
+    doc.appendChild(message);
+    QDomElement type = doc.createElement("TYPE");//<TYPE>
+    QDomText typeContent = doc.createTextNode(QString::number(Send_Thread_Info));
+    type.appendChild(typeContent);
+    message.appendChild(type);
+
+    QDomElement equip = doc.createElement("Equipment");//<Equipment>
+    message.appendChild(equip);
+    QDomElement thrId = doc.createElement("THRID");     //<THRID>
+    QDomText thrId_str = doc.createTextNode(thread.threadId);
+    thrId.appendChild(thrId_str);
+
+    QDomElement action = doc.createElement("ACTION");   //<ACTION>
+    QDomText action_str = doc.createTextNode(QString::number(thread.action));
+    action.appendChild(action_str);
+
+    QString threadXml = doc.toString();
+    sendMsg(threadXml);
+}
+
  QString StreamMonitor::getFileName(QString cmeraId)
  {
 //        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -504,6 +548,23 @@ void StreamMonitor::hisVdReqWithTimer()
             }
         }
     }
+}
+
+void StreamMonitor::monitorThreads()
+{
+    cout<<"monitorThreadsHeart"<<endl;
+    for(int i=0; i<threadsInfo.size(); i++)
+    {
+        if((time(NULL)-threadsInfo[i].heartime)>20)
+        {
+            QString str = threadsInfo[i].action==1? "http线程":"磁盘检测线程";
+            cout<<str.toStdString()<<" 心跳超时, 发送给流媒体处理"<<endl;
+            threadsInfo[i].state = ThreadStateInfo::Dead;
+            sendThreadInfo(threadsInfo[i]);
+        }else
+            threadsInfo[i].state = ThreadStateInfo::NORMAL;
+    }
+
 }
 
 void StreamMonitor::monitorDBStatus()
@@ -790,6 +851,15 @@ void StreamMonitor::printDbStatusInfo()
             tablesInfo += dbStatusInfo.lostTables[i] + ",";
         }
         cout<< "丢失的表为:"<<tablesInfo.toStdString()<<endl;
+    }
+}
+
+void StreamMonitor::printThreadsInfo()
+{
+    cout<<"**********线程状态************"<<endl;
+    for(int i=0; i<threadsInfo.size(); i++)
+    {
+        cout<<"线程id:"<<threadsInfo[i].threadId<<" 线程类型:"<<(threadsInfo[i].action==1? "http线程":"磁盘检测线程")<<" 状态:"<<threadErrorInfoMap[threadsInfo[i].state]<<endl;
     }
 }
 

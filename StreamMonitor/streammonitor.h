@@ -30,6 +30,7 @@ class StreamMonitor : public QObject
     };
     enum SendMsgType
     {
+        Send_Thread_Info=1,
         Send_DB_Info=2,
         Send_HisVd_Req=4,               //历史视频调看
         Send_Disk_Info=5,
@@ -48,6 +49,8 @@ public:
     void sendRelVdRecState(QString cameraId);               //当前录制文件有问题，返回消息
     void sendHisVdRequest(QString cameraId);               //发送历史视频调看请求
     void sendDbStatus();                                                    //发送数据库状态到流媒体服务
+    void sendThreadInfo(const ThreadStateInfo& thread);                                                 //发送线程监控结果给流媒体
+
 
     QString getFileName(QString cmeraId);                       //读取数据库，获取当前录制的视频文件路径(索引中距离当前时间点最近的记录即当前录制的文件)
 
@@ -60,6 +63,7 @@ public:
     void printRelVdReqInfo();
     void printHisVdReqInfo();
     void printDbStatusInfo();
+    void printThreadsInfo();
 
 signals:
 
@@ -68,6 +72,7 @@ public slots:
     void monitorCamera();                       //摄像机状态监控
     void monitorRelAndHisVdReq();       //实时视频和历史视频调看监控
     void monitorDBStatus();                     //数据库状态监视
+    void monitorThreads();                      //监视线程状态
 
     void relVdReqWithTimer();               //利用定时器重复请求实时视频调看,达到3次或者成功为止
     void hisVdReqWithTimer();               //利用定时器重复请求历史视频调看,达到3次或者成功为止
@@ -85,7 +90,7 @@ private:
     QMap<int, QString>    relVdRecErrInfoMap;       //存放错误码与错误信息的映射
     QMap<int, QString>    relHisVdReqErrInfoMap;       //存放错误码与错误信息的映射
     QMap<int, QString>    DbStatusErrInfoMap;           //存放错误码与错误信息的映射
-
+    QMap<int, QString>    threadErrorInfoMap;           //存放错误码与错误信息的映射
     //视频调看相关,请求失败，则需要请求3次
     int   relReqCount;          //实时视频请求调看的次数
     QTimer * relRqTimer;        //实时视频请求调看计时器
@@ -99,6 +104,7 @@ private:
 
     int   hisReqCount;               //历史视频请求调看的次数
     QTimer * hisRqTimer;        //历史视频请求调看计时器
+
 };
 
 #endif // STREAMMONITOR_H

@@ -32,6 +32,7 @@ private:
     QTimer *cameraMonTimer;                 //监听摄像机信息计时器
     QTimer *relAndHisVdReqTimer;                 //实时或者历史调看计时器
     QTimer *dbMonitorTimer;                         //数据库状态监视计时器
+    QTimer *threadHeartTimer;                        //线程心跳检测定时器
 
     StreamMonitor *streamMonitor;           //流媒体监控模块
 };

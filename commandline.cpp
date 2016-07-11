@@ -50,6 +50,7 @@ void CommandLine::lsDB()
 void CommandLine::lsThreads()
 {
     cout<<"list threads info"<<endl;
+    streamMonitor->printThreadsInfo();
 }
 
 void CommandLine::lsCPU()

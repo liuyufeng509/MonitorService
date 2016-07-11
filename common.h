@@ -61,7 +61,7 @@ struct CameraStateInfo
 //线程状态
 struct ThreadStateInfo
 {
-    ThreadStateInfo():threadId(""),state(NORMAL)
+    ThreadStateInfo():threadId(""),state(NORMAL), heartime(time(NULL))
     {
 
     }
@@ -78,6 +78,8 @@ struct ThreadStateInfo
     QString     threadId;
     int             action;             //1 http线程 2：视频流线程 3：磁盘检测线程
     ThreadState state;
+
+    time_t heartime;
 };
 
 //流媒体服务器历史视频和实时视频能否调看
