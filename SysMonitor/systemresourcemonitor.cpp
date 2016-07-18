@@ -755,6 +755,7 @@ void SystemResourceMonitor::StartProcess()
     string str = QReadConfig::getInstance()->getProcDogConf().strPath.toStdString();
 
     string str1 = "gnome-terminal -e "+str;
+    cout<<str1<<endl;
     char* fileName = NULL;
     fileName = (char*)str1.data();
     //cout<<fileName<<endl;

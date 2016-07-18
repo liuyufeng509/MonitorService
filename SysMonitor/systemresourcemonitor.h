@@ -25,6 +25,12 @@ using namespace std;
 
 typedef struct CPU
 {
+    CPU():MediaProcessID(0),threadID(0),systemCpu(0),processCpu(0),
+        threadCpu(0), MediaProcessName(NULL)
+    {
+
+    }
+
     int MediaProcessID;                     //媒体进程ID
     int threadID;                           //线程ID
     float systemCpu;                        //系统CPU使用率
@@ -36,6 +42,13 @@ typedef struct CPU
 
 typedef struct DISK
 {
+    DISK():totalSize(0), freeSize(0), usage(0),
+        temp_readSpeed(0),temp_writeSpeed(0),
+        readSpeed(0),writeSpeed(0),diskPach(NULL), fileSystem(NULL)
+    {
+
+    }
+
     long totalSize;                         //磁盘总大小
     long freeSize;                          //磁盘剩余大小
     float usage;                            //磁盘使用率
