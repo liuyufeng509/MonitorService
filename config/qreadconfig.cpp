@@ -19,6 +19,12 @@ void QReadConfig::readConfigFile(QString filePath)
     domainSockConf.clientName = configIniRead->value("DoMainSock/clientname").toString();
     domainSockConf.checkTimer = configIniRead->value("DoMainSock/checktime").toInt();
 
+    sysResConf.bOpen = configIniRead->value("SysResource/open").toBool();
+    sysResConf.timer = configIniRead->value("SysResource/timer").toBool();
+
+    diskConf.diskPaths = configIniRead->value("Disk/tmpfilepath").toString().split('#');
+    diskConf.diskFileNames = configIniRead->value("Disk/diskfilename").toString().split('#');
+
     cameraSvrConf.bOpen = configIniRead->value("CameraSvr/open").toBool();
     cameraSvrConf.timer = configIniRead->value("CameraSvr/timer").toInt();
     cameraSvrConf.vdPath = configIniRead->value("CameraSvr/vdPath").toString();
@@ -29,22 +35,6 @@ void QReadConfig::readConfigFile(QString filePath)
 
     threadSvrConf.bOpen = configIniRead->value("ThreadSvr/open").toBool();
     threadSvrConf.timer = configIniRead->value("ThreadSvr/timer").toInt();
-
-    cpuConf.bOpen = configIniRead->value("CPU/open").toBool();
-    cpuConf.timer = configIniRead->value("CPU/timer").toInt();
-
-    memConf.bOpen = configIniRead->value("MEM/open").toBool();
-    memConf.timer = configIniRead->value("MEM/timer").toInt();
-
-    diskConf.bOpen = configIniRead->value("Disk/open").toBool();
-    diskConf.timer = configIniRead->value("Disk/timer").toInt();
-    diskConf.diskPaths = configIniRead->value("Disk/tmpfilepath").toString().split('#');
-
-    netConf.bOpen = configIniRead->value("Net/open").toBool();
-    netConf.timer = configIniRead->value("Net/timer").toInt();
-
-    procConf.bOpen = configIniRead->value("Process/open").toBool();
-    procConf.timer = configIniRead->value("Process/timer").toInt();
 
     relAndHisVideoConf.bOpen = configIniRead->value("RelAndHis/open").toBool();
     relAndHisVideoConf.timer = configIniRead->value("RelAndHis/timer").toInt();
@@ -57,6 +47,11 @@ void QReadConfig::readConfigFile(QString filePath)
     gsoapConf.passwd = configIniRead->value("gsoapInfo/passwd").toString();
 
     delete configIniRead;
+}
+
+SysResourceConfig   QReadConfig::getSysResConf()
+{
+    return sysResConf;
 }
 
 void QReadConfig::printInfo()
@@ -72,6 +67,10 @@ void QReadConfig::printInfo()
     cout<<"domainSockConf.clientname="<<domainSockConf.clientName.toStdString()<<endl;
     cout<<"domainSockConf.checkTimer="<<domainSockConf.checkTimer<<endl;
 
+    cout<<"******************SysResourceConfig*********************"<<endl;
+    cout<<"sysResConf.bOpen="<<sysResConf.bOpen<<endl;
+    cout<<"sysResConf.nTimer="<<sysResConf.timer<<endl;
+
     cout<<"******************CameraSvrConfig*********************"<<endl;
     cout<<"cameraSvrConf.bOpen="<<cameraSvrConf.bOpen<<endl;
     cout<<"cameraSvrConf.nTimer="<<cameraSvrConf.timer<<endl;
@@ -85,26 +84,6 @@ void QReadConfig::printInfo()
     cout<<"******************ThreadSvrConfig*********************"<<endl;
     cout<<"threadSvrConf.bOpen="<<threadSvrConf.bOpen<<endl;
     cout<<"threadSvrConf.nTimer="<<threadSvrConf.timer<<endl;
-
-    cout<<"******************CPUConfig*********************"<<endl;
-    cout<<"cpuConf.bOpen="<<cpuConf.bOpen<<endl;
-    cout<<"cpuConf.nTimer="<<cpuConf.timer<<endl;
-
-    cout<<"******************MEMConfig*********************"<<endl;
-    cout<<"memConf.bOpen="<<memConf.bOpen<<endl;
-    cout<<"memConf.nTimer="<<memConf.timer<<endl;
-
-    cout<<"******************DiskConfig*********************"<<endl;
-    cout<<"diskConf.bOpen="<<diskConf.bOpen<<endl;
-    cout<<"diskConf.nTimer="<<diskConf.timer<<endl;
-
-    cout<<"******************NetConfig*********************"<<endl;
-    cout<<"netConf.bOpen="<<netConf.bOpen<<endl;
-    cout<<"netConf.nTimer="<<netConf.timer<<endl;
-
-    cout<<"******************ProcessConfig*********************"<<endl;
-    cout<<"procConf.bOpen="<<procConf.bOpen<<endl;
-    cout<<"procConf.nTimer="<<procConf.timer<<endl;
 
     cout<<"******************RelAndHisVideoConfig*********************"<<endl;
     cout<<"relAndHisVideoConf.bOpen="<<relAndHisVideoConf.bOpen<<endl;
@@ -139,26 +118,12 @@ ThreadSvrConfig  QReadConfig::getThreadSvrConf()
 {
     return threadSvrConf;
 }
-CPUConfig        QReadConfig::getCPUConf()
-{
-    return cpuConf;
-}
-MEMConfig        QReadConfig::getMemConf()
-{
-    return memConf;
-}
+
 DiskConfig       QReadConfig::getDiskCong()
 {
     return diskConf;
 }
-NetConfig        QReadConfig::getNetConfig()
-{
-    return netConf;
-}
-ProcessConfig    QReadConfig::getProcConf()
-{
-    return procConf;
-}
+
 RelAndHisVideoConfig QReadConfig::getRelAndHisVidConf()
 {
     return relAndHisVideoConf;

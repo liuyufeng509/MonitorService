@@ -25,15 +25,11 @@ public:
     CameraSvrConfig  getCameraSvrConf();
     DBSvrConfig      getDBSvrConf();
     ThreadSvrConfig  getThreadSvrConf();
-    CPUConfig        getCPUConf();
-    MEMConfig        getMemConf();
     DiskConfig       getDiskCong();
-    NetConfig        getNetConfig();
-    ProcessConfig    getProcConf();
     RelAndHisVideoConfig getRelAndHisVidConf();
     DomainSockConfig     getDomainSockConf();
     GsoapConfig                getGsoapInfoConf();
-
+    SysResourceConfig      getSysResConf();
     void readConfigFile(QString filePath);  //读取配置文件
 
     void printInfo();       //打印配置信息
@@ -55,14 +51,11 @@ private:
     CameraSvrConfig         cameraSvrConf;
     DBSvrConfig             dbSvrConf;
     ThreadSvrConfig         threadSvrConf;
-    CPUConfig               cpuConf;
-    MEMConfig               memConf;
     DiskConfig              diskConf;
-    NetConfig               netConf;
-    ProcessConfig           procConf;
     RelAndHisVideoConfig    relAndHisVideoConf;
     DomainSockConfig        domainSockConf;
     GsoapConfig                  gsoapConf;
+    SysResourceConfig       sysResConf;
 };
 
 #endif // QREADCONFIG_H

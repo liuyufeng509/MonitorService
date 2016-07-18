@@ -859,7 +859,9 @@ void StreamMonitor::printThreadsInfo()
     cout<<"**********线程状态************"<<endl;
     for(int i=0; i<threadsInfo.size(); i++)
     {
-        cout<<"线程id:"<<threadsInfo[i].threadId<<" 线程类型:"<<(threadsInfo[i].action==1? "http线程":"磁盘检测线程")<<" 状态:"<<threadErrorInfoMap[threadsInfo[i].state]<<endl;
+        cout<<"线程id:"<<threadsInfo[i].threadId.toStdString()<<" 线程类型:"
+           <<(threadsInfo[i].action==1? "http线程":"磁盘检测线程")<<
+           " 状态:"<<threadErrorInfoMap[threadsInfo[i].state].toStdString()<<endl;
     }
 }
 

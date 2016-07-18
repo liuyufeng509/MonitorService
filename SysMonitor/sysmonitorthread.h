@@ -22,8 +22,9 @@ public:
     }
     ~SysMonitorThread()
     {
-        delete timer;
+        delete proDogtimer;
         delete sysMonitor;
+        delete sysTimer;
     }
 
    //void monitorCPU();
@@ -34,8 +35,8 @@ signals:
    // void done();
 
 private:
-    QTimer *timer;
-
+    QTimer *proDogtimer;    //进程狗定时器
+    QTimer *sysTimer;           //系统资源监控定时器
     SysMonitor *sysMonitor;
 };
 

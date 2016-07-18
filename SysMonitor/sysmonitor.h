@@ -1,6 +1,6 @@
 #ifndef SYSMONITOR_H
 #define SYSMONITOR_H
-
+#include"systemresourcemonitor.h"
 #include <QObject>
 /**
  * @brief The SysMonitor class
@@ -12,11 +12,17 @@ class SysMonitor : public QObject
     Q_OBJECT
 public:
     explicit SysMonitor(QObject *parent = 0);
-
+    ~SysMonitor();
 signals:
 
 public slots:
-    void monitorCPU();
+    void monitorSysResource();
+    void monitorProcess();          //进程狗
+
+
+private:
+    systemResource_t systemResource;        //存放系统资源监控的所有数据
+    SystemResourceMonitor* systemResourceMonitor; //系统资源监控类
 };
 
 #endif // SYSMONITOR_H

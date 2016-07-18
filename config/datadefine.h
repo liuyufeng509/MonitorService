@@ -51,61 +51,28 @@ struct ThreadSvrConfig
     int 	    timer;		//轮询间隔
 };
 
-
-struct CPUConfig
+struct SysResourceConfig
 {
-    CPUConfig():bOpen(false),timer(10)
+    SysResourceConfig():bOpen(false),timer(10000)
     {
 
     }
-    bool 	    bOpen;		//是否开启
-    int 	    timer;		//轮询间隔
+
+    bool bOpen;
+    int  timer;
 };
-
-
-struct MEMConfig
-{
-    MEMConfig():bOpen(false),timer(10)
-    {
-
-    }
-    bool 	    bOpen;		//是否开启
-    int 	    timer;		//轮询间隔
-};
-
 
 struct DiskConfig
 {
-    DiskConfig():bOpen(false),timer(10)
+    DiskConfig()
     {
 
     }
-    bool	    bOpen;		//是否开启
-    int		    timer;		//轮询间隔
     QStringList diskPaths;       //硬盘们的挂载路径
+    QStringList diskFileNames;//磁盘的文件名
 };
 
 
-struct NetConfig
-{
-    NetConfig():bOpen(false),timer(10)
-    {
-
-    }
-    bool            bOpen;              //是否开启
-    int             timer;              //轮询间隔
-};
-
-
-struct ProcessConfig
-{
-    ProcessConfig():bOpen(false),timer(10)
-    {
-
-    }
-    bool            bOpen;              //是否开启
-    int             timer;              //轮询间隔
-};
 
 //实时和历史视频调看模块配置
 struct RelAndHisVideoConfig

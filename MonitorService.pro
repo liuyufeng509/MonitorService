@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     intcommon/soapintcommonProxy.cpp \
     intcommon/soapJqServiceHttpBindingProxy.cpp \
     intcommon/soapPzServiceImplServiceSoapBindingProxy.cpp \
-    intcommon/stdsoap2.cpp
+    intcommon/stdsoap2.cpp \
+    SysMonitor/systemresourcemonitor.cpp
 
 HEADERS += \
     config/qreadconfig.h \
@@ -47,7 +48,8 @@ HEADERS += \
     intcommon/soapJqServiceHttpBindingProxy.h \
     intcommon/soapPzServiceImplServiceSoapBindingProxy.h \
     intcommon/soapStub.h \
-    intcommon/stdsoap2.h
+    intcommon/stdsoap2.h \
+    SysMonitor/systemresourcemonitor.h
 
 DISTFILES += \
     config.ini \

@@ -18,13 +18,13 @@ int main(int argc, char *argv[])
     sysMonitorThread.start();
 
     //启动业务逻辑监控线程
-    StreamMonitorThread streamMonitorThread;
-    streamMonitorThread.start();
+  //  StreamMonitorThread streamMonitorThread;
+ //   streamMonitorThread.start();
 
 
     //命令行处理类
-    CommandLine::getInstance()->printHelp();
-    CommandLine::getInstance()->run();
+//    CommandLine::getInstance()->printHelp();
+  //  CommandLine::getInstance()->run();
 
 //    qApp->quit();
 //    QProcess::startDetached(qApp->applicationFilePath(), QStringList());  重启本身
