@@ -4,10 +4,12 @@
 #include"SysMonitor/sysmonitorthread.h"
 #include"StreamMonitor/streammonitorthread.h"
 #include "commandline.h"
-
+#include <QtDebug>
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+
+    qInstallMessageHandler(outputMessage);
 
     //读取配置文件
     QReadConfig::getInstance()->readConfigFile("/home/liuyufeng/MonitorService/config.ini");
@@ -16,6 +18,7 @@ int main(int argc, char *argv[])
     //启动系统资源监控线程，进程狗应该是属于系统资源监控的一部分
     SysMonitorThread sysMonitorThread;
     sysMonitorThread.start();
+
 
     //启动业务逻辑监控线程
   //  StreamMonitorThread streamMonitorThread;

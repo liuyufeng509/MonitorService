@@ -2,6 +2,8 @@
 #define COMMON_H
 #include<QString>
 #include<QStringList>
+#include <QtDebug>
+#include <QtGlobal>
 //硬盘状态信息，根据此信息判断是否进行自恢复和通知流媒体服务
 struct DiskStateInfo{
     enum DiskState{
@@ -14,6 +16,7 @@ struct DiskStateInfo{
     QString    mountPath;       //硬盘的挂载路径
     DiskState state;        //暂时只有硬盘状态，其他的信息如读写速度等，后续资源监控时添加
 };
+
 
 //历史文件是否正常
 struct HisVdFileState
@@ -117,4 +120,26 @@ struct DBStatusInfo
     QStringList    lostTables;       //缺少的表
 };
 
+enum                            //日志级别
+{
+    WARNING=1,
+    DEBUG=2,
+    GUZHANG=3,
+};
+
+#define LOG(type, msg)  \
+    switch(type)    \
+{                               \
+    case WARNING:   \
+        qWarning(msg);  \
+        break;                  \
+    case DEBUG:             \
+        qDebug(msg);        \
+        break;                      \
+    case GUZHANG:       \
+        qFatal(msg);        \
+        break;                  \
+}
+
+void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 #endif // COMMON_H

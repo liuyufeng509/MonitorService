@@ -764,7 +764,6 @@ void SystemResourceMonitor::StartProcess()
 
 void SystemResourceMonitor::MediaProcessMonitor()
 {
-    //char* processName = "HbMedia";
     char *processName = new char[255];
     memset(processName, 0, 255);
     strcpy(processName, QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
