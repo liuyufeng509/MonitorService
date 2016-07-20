@@ -2,6 +2,7 @@
 #define QREADCONFIG_H
 #include<QSettings>
 #include"datadefine.h"
+#include"../common.h"
 /***
  * QReadConfig类：
  * 该类是一个单例模式，负责读取并存储流媒体监控服务的配置信息。
@@ -30,6 +31,8 @@ public:
     DomainSockConfig     getDomainSockConf();
     GsoapConfig                getGsoapInfoConf();
     SysResourceConfig      getSysResConf();
+    LogInfo                         getLogInfo();
+
     void readConfigFile(QString filePath);  //读取配置文件
 
     void printInfo();       //打印配置信息
@@ -56,6 +59,8 @@ private:
     DomainSockConfig        domainSockConf;
     GsoapConfig                  gsoapConf;
     SysResourceConfig       sysResConf;
+
+    LogInfo                 logInfo;
 };
 
 #endif // QREADCONFIG_H

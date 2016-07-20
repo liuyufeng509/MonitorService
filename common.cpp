@@ -2,6 +2,32 @@
 #include<QMutex>
 #include<QDateTime>
 #include<QFile>
+#include<QDir>
+#include"config/qreadconfig.h"
+#include <unistd.h>
+#define MAX_SIZE  255
+QString getCwdPath()
+{
+    char current_absolute_path[MAX_SIZE];
+    int cnt = readlink("/proc/self/exe", current_absolute_path, MAX_SIZE);
+    if (cnt < 0 || cnt >= MAX_SIZE)
+    {
+        printf("***Error***\n");
+        exit(-1);
+    }
+
+    int i;
+    for (i = cnt; i >=0; --i)
+    {
+        if (current_absolute_path[i] == '/')
+        {
+            current_absolute_path[i+1] = '\0';
+            break;
+        }
+    }
+    return QString(current_absolute_path);
+}
+
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     static QMutex mutex;
@@ -31,7 +57,9 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     QString current_date = QString("(%1)").arg(current_date_time);
     QString message = QString("%1 %2 %3 %4").arg(text).arg(current_date).arg(context_info).arg(msg);
 
-    QFile file("log.txt");
+
+    QString path = getCwdPath();
+    QFile file(path+"log.txt");
     file.open(QIODevice::WriteOnly | QIODevice::Append);
     QTextStream text_stream(&file);
     text_stream << message << "\r\n";

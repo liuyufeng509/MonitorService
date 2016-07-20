@@ -62,6 +62,13 @@ struct SysResourceConfig
     int  timer;
 };
 
+//日志信息
+struct LogInfo
+{
+    QString path;
+    int         size;
+};
+
 struct DiskConfig
 {
     DiskConfig()

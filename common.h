@@ -141,5 +141,6 @@ enum                            //日志级别
         break;                  \
 }
 
+QString getCwdPath();
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 #endif // COMMON_H

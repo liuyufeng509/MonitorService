@@ -46,12 +46,20 @@ void QReadConfig::readConfigFile(QString filePath)
     gsoapConf.userID = configIniRead->value("gsoapInfo/userid").toString();
     gsoapConf.passwd = configIniRead->value("gsoapInfo/passwd").toString();
 
+    logInfo.path = configIniRead->value("Log/path").toString();
+    logInfo.size = configIniRead->value("Log/size").toInt();
+
     delete configIniRead;
 }
 
 SysResourceConfig   QReadConfig::getSysResConf()
 {
     return sysResConf;
+}
+
+LogInfo QReadConfig::getLogInfo()
+{
+    return logInfo;
 }
 
 void QReadConfig::printInfo()
@@ -96,7 +104,6 @@ void QReadConfig::printInfo()
     cout<<"gsoapConf.connTimeout="<<gsoapConf.connTimeout<<endl;
     cout<<"gsoapConf.userID="<<gsoapConf.userID.toStdString()<<endl;
     cout<<"gsoapConf.passwd="<<gsoapConf.passwd.toStdString()<<endl;
-
 }
 
 ProcessDogConfig QReadConfig::getProcDogConf()
