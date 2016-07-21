@@ -84,7 +84,7 @@ private:
     QList<CameraStateInfo> camerasInfo;         //摄像机信息状态
     QList<ThreadStateInfo>  threadsInfo;            //所有线程的状态信息
     RelAndHisVdReqStat        relAndHisVdReqStat;       //流媒体实时和历史视频调看状态
-    DBStatusInfo                    dbStatusInfo;                   //存放数据库的状态
+    QList<DBStatusInfo>                    dbStatusInfos;                   //存放数据库的状态
     QMap<int, QString>    diskErrInfoMap;       //存放错误码与错误信息的映射
     QMap<int, QString>    hisFileErrInfoMap;       //存放错误码与错误信息的映射
     QMap<int, QString>    relVdRecErrInfoMap;       //存放错误码与错误信息的映射

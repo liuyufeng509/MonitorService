@@ -40,7 +40,7 @@ return;
 }
 int main(int argc, char *argv[])
 {
-     init_daemon();
+    // init_daemon();
     QCoreApplication a(argc, argv);
 
     //读取配置文件
@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
 
 
     //启动业务逻辑监控线程
-  //  StreamMonitorThread streamMonitorThread;
- //   streamMonitorThread.start();
+    StreamMonitorThread streamMonitorThread;
+    streamMonitorThread.start();
 
 
     //命令行处理类
