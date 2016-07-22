@@ -40,26 +40,6 @@ typedef struct CPU
 
 }cpu_t;
 
-typedef struct DISK
-{
-    DISK():totalSize(0), freeSize(0), usage(0),
-        temp_readSpeed(0),temp_writeSpeed(0),
-        readSpeed(0),writeSpeed(0),diskPach(NULL), fileSystem(NULL)
-    {
-
-    }
-
-    long totalSize;                         //磁盘总大小
-    long freeSize;                          //磁盘剩余大小
-    float usage;                            //磁盘使用率
-    long temp_readSpeed;                         //临时变量磁盘读取速度
-    long temp_writeSpeed;                        //临时变量磁盘写入速度
-    long readSpeed;                         //磁盘读取速度
-    long writeSpeed;                        //磁盘写入速度
-    char *diskPach;                         //磁盘阵列挂载路径
-    char *fileSystem;                       //磁盘文件系统名称
-}disk_t;
-
 typedef struct cpuTime
 {
     long totalCpuTime;                      //CPU总时间
@@ -108,7 +88,6 @@ typedef struct SYSTEMRESOURCE
     cpu_t cpu;
     memory_t memory;
     net_t net;
-    vector<disk_t>disks;
 }systemResource_t;
 
 class SystemResourceMonitor
@@ -123,9 +102,6 @@ public:
     /*please input process name and thread ID in struct memory*/
     void GetSysProThrMemUsage(memory_t& memoryInfo);        //获取系统系统内存空间/剩余大小/进程/线程内存使用率
 
-    //磁盘
-    /*输入磁盘挂在路径和文件系统名称（10秒获取一次 ）*/
-    void GetSystemDiskInfo(disk_t& disk);                   //获取磁盘阵列的使用状况信息
 
     //网络
     void GetNetInterfaceInfo(net_t& net);                   //获取网络接口使用状况信息111

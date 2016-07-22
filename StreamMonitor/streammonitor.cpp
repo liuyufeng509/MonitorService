@@ -352,7 +352,7 @@ void StreamMonitor::monitorDiskInfo()
         QFileInfo fileInfo(disk.mountPath);
         QString fileName = disk.mountPath[disk.mountPath.length()-1]=='/'? disk.mountPath+"test":disk.mountPath+"/test";
         QFile file(fileName);
-        getDiskInfo(disk.mountPath.toStdString().c_str(), disk);
+        getDiskInfo((char*)disk.mountPath.toStdString().c_str(), disk);
         if(!fileInfo.isDir())       //加载目录是否存在判断硬盘是否加载
         {
             disk.state = DiskStateInfo::CAN_NOT_MOUNT;
@@ -396,10 +396,10 @@ void StreamMonitor::sendDbStatus()
             QDomElement equip = doc.createElement("Equipment");//<Equipment>
             message.appendChild(equip);
             QDomElement camID = doc.createElement("CAMID");     //<CAMID>
-            QDomText camid_str = doc.createTextNode(dbStatusInfos.lostTables[i]);
+            QDomText camid_str = doc.createTextNode(dbStatusInfos[i].CameraID);
             camID.appendChild(camid_str);
             QDomElement status = doc.createElement("STATUS ");//<STATUS>
-            QDomText status_str= doc.createTextNode(QString::number(dbStatusInfos.DBState));
+            QDomText status_str= doc.createTextNode(QString::number(dbStatusInfos[i].DBState));
             status.appendChild(status_str);
 
             equip.appendChild(camID);
@@ -441,7 +441,7 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
 
  QString StreamMonitor::getFileName(QString cmeraId)
  {
-        QString dbPath = "/usr/local/"+cameraId+"_Video.db";
+        QString dbPath = "/usr/local/"+cmeraId+"_Video.db";
          QString fileName = "";
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
@@ -591,7 +591,7 @@ void StreamMonitor::monitorDBStatus()
     dbStatusInfos.clear();
     for(int i=0; i<camerasInfo.size(); i++)
     {
-        QString dbPath = "/usr/local/"+camerasInfo+"_Video.db";
+        QString dbPath = "/usr/local/"+camerasInfo[i].cmareId+"_Video.db";
         DBStatusInfo dbStaInfo;
         dbStaInfo.CameraID = camerasInfo[i].cmareId;
         dbStaInfo.DBState = DBStatusInfo::NORMAL;
@@ -616,7 +616,7 @@ void StreamMonitor::monitorDBStatus()
                      QString insertSql = "insert into VIDEO_RECORD (CAMID,FILENAME) VALUES(11111,\"testInsert\")";
                      if(!queryWrite.exec(insertSql))
                      {
-                          dbStatusInfos.DBState = DBStatusInfo::DB_TABLE_LOCKED;
+                          dbStaInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
                           QString querys = queryWrite.lastError().text();
                           cout<<querys.toStdString()<<endl;
                           LOG(WARNING, (QString("插入数据失败:") + querys).toStdString().c_str());
@@ -627,7 +627,7 @@ void StreamMonitor::monitorDBStatus()
                          QString delSql = "delete from VIDEO_RECORD  where CAMID=11111 and FILENAME=\"testInsert\"";
                          if(!queryDelete.exec(delSql))
                          {
-                             dbStatusInfos.DBState = DBStatusInfo::DB_TABLE_LOCKED;
+                             dbStaInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
                              QString querys = queryDelete.lastError().text();
                              cout<<querys.toStdString()<<endl;
                              LOG(WARNING, (QString("删除数据失败:") + querys).toStdString().c_str());
@@ -642,7 +642,6 @@ void StreamMonitor::monitorDBStatus()
 
         dbStatusInfos.append(dbStaInfo);
     }
-     dbStatusInfos.DBState = DBStatusInfo::NORMAL;
 
        //send to stream
        sendDbStatus();
@@ -657,7 +656,7 @@ void StreamMonitor::monitorDBStatus()
         if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
         {
             //重启流媒体进程:此处只杀死流媒体进程，进程狗功能会自动重启流媒体服务
-            kill_spider_backgroud(QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
+            kill_spider_backgroud((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
             cout<<"3次失败,重启流媒体进程"<<endl;
         }
     }else
@@ -851,15 +850,9 @@ void StreamMonitor::printHisVdReqInfo()
 
 void StreamMonitor::printDbStatusInfo()
 {
-    cout<<"数据库状态"<<DbStatusErrInfoMap[dbStatusInfos.DBState].toStdString()<<endl;
-    if(dbStatusInfos.DBState==DBStatusInfo::DB_LOST_DB_FILE)
+    for(int i=0; i<dbStatusInfos.size(); i++)
     {
-        QString tablesInfo = "";
-        for(int i=0; i<dbStatusInfos.lostTables.size(); i++)
-        {
-            tablesInfo += dbStatusInfos.lostTables[i] + ",";
-        }
-        cout<< "丢失的表为:"<<tablesInfo.toStdString()<<endl;
+        cout<<"数据库"<<dbStatusInfos[i].CameraID.toStdString()<<" 状态 "<<DbStatusErrInfoMap[dbStatusInfos[i].DBState].toStdString()<<endl;
     }
 }
 

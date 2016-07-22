@@ -29,6 +29,7 @@ struct DiskStateInfo{
     qint64 f_blocks;                                //块个数
 };
 
+//CPU信息
 
 //历史文件是否正常
 struct HisVdFileState
