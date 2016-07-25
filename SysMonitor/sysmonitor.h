@@ -1,6 +1,7 @@
 #ifndef SYSMONITOR_H
 #define SYSMONITOR_H
 #include"systemresourcemonitor.h"
+#include"../common.h"
 #include <QObject>
 /**
  * @brief The SysMonitor class
@@ -21,7 +22,8 @@ public slots:
 
 
 private:
-    systemResource_t systemResource;        //存放系统资源监控的所有数据
+    SysResource sysRes;
+    ProcResource procRes;
     SystemResourceMonitor* systemResourceMonitor; //系统资源监控类
 };
 

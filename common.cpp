@@ -5,6 +5,8 @@
 #include<QDir>
 #include"config/qreadconfig.h"
 #include <unistd.h>
+#include <iostream>
+using namespace std;
 #define MAX_SIZE  255
 QString getCwdPath()
 {
@@ -60,11 +62,18 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 
     QString path = getCwdPath();
     QFile file(path+"log.txt");
-    file.open(QIODevice::WriteOnly | QIODevice::Append);
-    QTextStream text_stream(&file);
-    text_stream << message << "\r\n";
-    file.flush();
-    file.close();
+    QFileInfo fileInfo(file);
+    if(fileInfo.size()>(QReadConfig::getInstance()->getLogInfo().size<<20))
+    {
+        QFile::remove(file.fileName());
+    }else
+    {
+        file.open(QIODevice::WriteOnly | QIODevice::Append);
+        QTextStream text_stream(&file);
+        text_stream << message << "\r\n";
+        file.flush();
+        file.close();
+    }
     mutex.unlock();
 }
 
@@ -132,7 +141,7 @@ int getDiskInfo(char *path, DiskStateInfo &diskInfo)
     struct statfs disk_info;
     int ret = 0;
 
-    if (ret == statfs(path, &disk_info) == -1)
+    if ((ret=statfs(path, &disk_info)) == -1)
     {
       fprintf(stderr, "Failed to get file disk infomation,\
           errno:%u, reason:%s\n", errno, strerror(errno));
@@ -141,10 +150,11 @@ int getDiskInfo(char *path, DiskStateInfo &diskInfo)
     long long total_size = disk_info.f_blocks * disk_info.f_bsize;
     long long available_size = disk_info.f_bavail * disk_info.f_bsize;
     long long free_size = disk_info.f_bfree * disk_info.f_bsize;
-    diskInfo.total_size = total_size;
-    diskInfo.available_size = available_size;
-    diskInfo.free_size = free_size;
-    diskInfo.f_blocks = disk_info.f_blocks;
+    diskInfo.baseInfo.total_size = total_size;
+    diskInfo.baseInfo.available_size = available_size;
+    diskInfo.baseInfo.free_size = free_size;
+    diskInfo.baseInfo.f_blocks = disk_info.f_blocks;
+    diskInfo.baseInfo.mountPath = QString(path);
 
     //输出每个块的长度，linux下内存块为4KB
     printf("block size: %ld bytes\n", disk_info.f_bsize);
@@ -165,3 +175,194 @@ int getDiskInfo(char *path, DiskStateInfo &diskInfo)
 
     return 0;
 }
+
+void getSysResource(SysResource &sysRes)
+{
+    LOG(INFO,"监控系统资源");
+    getCPUInfo(sysRes.cpu);
+    getMemInfo(sysRes.mem);
+    for(int i=0; i<sysRes.disks.size(); i++)
+    {
+        DiskStateInfo disk;
+        getDiskInfo((char*)sysRes.disks[i].mountPath.toStdString().c_str(), disk);
+        sysRes.disks[i] = disk.baseInfo;
+    }
+}
+
+void getProcResource(ProcResource &procRes)
+{
+    LOG(INFO,"监控进程资源");
+    getCPUInfo(procRes.cpu, (char*)procRes.procName.toStdString().c_str());
+    getMemInfo(procRes.mem, (char*)procRes.procName.toStdString().c_str());
+}
+
+void getProcCpuStats(Procstat & ps, int processID)
+{
+    //cout<<processID<<endl;
+    FILE *fp;
+    char buf[256];
+    char comm[20];
+    char task_state[2];
+
+    long int pid,ppid,pgid,sid,tty_nr,tty_pgrp,task_flags,min_flt,cmin_flt,maj_flt,cmaj_flt;
+
+    //processID int to string
+    string str;
+    char t[256];
+    sprintf(t, "%d", processID);
+    str = t;
+
+    string fileName = "/proc/" + str +"/stat";
+    //cout<<fileName<<":";
+    char *p =(char*)fileName.data();
+
+    //open process file
+    fp = fopen(p,"r");
+    if(fp == NULL)
+    {
+        perror("fopen:process file");
+        return ;
+    }
+
+    fgets(buf,sizeof(buf),fp);
+
+    sscanf(buf,"%ld%s%s%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld",&pid,comm,task_state,&ppid,&pgid,&sid,&tty_nr,&tty_pgrp,&task_flags,&min_flt,&cmin_flt,&maj_flt,&cmaj_flt,&ps.utime,&ps.stime,&ps.cutime,&ps.cstime);
+}
+void getCPUStatus(Procstat& ps) {
+     // Get "/proc/stat" info.
+     FILE* inputFile = NULL;
+
+     chdir("/proc");
+     inputFile = fopen("stat", "r");
+     if (!inputFile) {
+          perror("error: Can not open file.\n");
+     }
+
+     char buff[1024];
+     fgets(buff, sizeof(buff), inputFile); // Read 1 line.
+     printf(buff);
+     sscanf(buff, "%s %u %u %u %u %u %u %u %u %u", ps.processorName, &ps.user, &ps.nice, &ps.system, &ps.idle, &ps.iowait, &ps.irq, &ps.softirq, &ps.stealstolen, &ps.guest); // Scan from "buff".
+     printf("user: %u\n", ps.user);
+
+     fclose(inputFile);
+}
+float calculateCPUUse(Procstat ps1, Procstat ps2) {
+     unsigned int totalCPUTime = (ps2.user + ps2.nice + ps2.system + ps2.idle + ps2.iowait + ps2.irq + ps2.softirq + ps2.stealstolen + ps2.guest) - (ps1.user + ps1.nice + ps1.system + ps1.idle + ps1.iowait + ps1.irq + ps1.softirq + ps1.stealstolen + ps1.guest);
+     unsigned int idleCPUTime = ps2.idle - ps1.idle;
+
+     float CPUUse = ((float) totalCPUTime - (float) idleCPUTime) / (float) totalCPUTime;
+
+    // printf("totalCPUTime: %u\nidleCPUTime: %u\n", totalCPUTime, idleCPUTime);
+
+     return CPUUse;
+}
+float calculateProcCPUUse(Procstat ps1, Procstat ps2) {
+     unsigned int totalCPUTime = (ps2.user + ps2.nice + ps2.system + ps2.idle + ps2.iowait + ps2.irq + ps2.softirq + ps2.stealstolen + ps2.guest) -
+             (ps1.user + ps1.nice + ps1.system + ps1.idle + ps1.iowait + ps1.irq + ps1.softirq + ps1.stealstolen + ps1.guest);
+     unsigned int procTotalTime = (ps2.utime+ps2.stime+ps2.cutime+ps2.cstime)-(ps1.utime+ps1.stime+ps1.cutime+ps1.cstime);
+
+     unsigned int totalCPUTimePS2 = (ps2.user + ps2.nice + ps2.system + ps2.idle + ps2.iowait + ps2.irq + ps2.softirq + ps2.stealstolen + ps2.guest);
+     unsigned int totalCPUTimePS1 = (ps1.user + ps1.nice + ps1.system + ps1.idle + ps1.iowait + ps1.irq + ps1.softirq + ps1.stealstolen + ps1.guest);
+     float CPUUse = ((float)procTotalTime) / (float) totalCPUTime;
+     printf("totalCPUTime: %u\procTotalTime: %u ProcCPUUSE:%f\n", totalCPUTime, procTotalTime,CPUUse);
+    printf("totalCPUTimePS2: %u\totalCPUTimePS1: %u \n", totalCPUTimePS2, totalCPUTimePS1);
+     return CPUUse;
+}
+
+void getCPUInfo(CPUInfo &cpu, char *procname)
+{
+    Procstat ps1, ps2;
+    getCPUStatus(ps1);
+    sleep(1);
+    getCPUStatus(ps2);
+    cpu.occupy = calculateCPUUse(ps1, ps2)*100;
+    if(strlen(procname)==0)
+    {
+        return;
+    }else
+    {
+        std::string pid = getPidByName(procname);
+        getProcCpuStats(ps1, atoi(pid.c_str()));
+        sleep(1);
+        getProcCpuStats(ps2, atoi(pid.c_str()));
+        cpu.occupy=calculateProcCPUUse(ps1, ps2)*100;
+    }
+
+}
+
+void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
+{
+    FILE* fp;
+    char buf[100];
+    char name[20];
+    long memTotalSize;
+    long memFreeSize;
+    fp = fopen("/proc/meminfo","r");
+    if(fp == NULL)
+    {
+        perror("fopen:");
+        LOG(WARNING, "打不开系统内存文件");
+        exit (0);
+    }
+
+    fgets(buf,sizeof(buf),fp);
+    sscanf(buf,"%s%ld",name,&memTotalSize);
+    mem.totalMem= memTotalSize;
+    memset(name,0,sizeof(name));
+    fgets(buf,sizeof(buf),fp);
+    sscanf(buf,"%s%ld",name,&memFreeSize);
+    mem.freeMem = memFreeSize;
+    mem.occpy = (float)(memTotalSize-memFreeSize)/(float)memTotalSize;
+    fclose(fp);
+    if(strlen(procname)==0)
+    {
+        return;
+    }else
+    {
+        FILE* fpProc;
+        char buf[100];
+        char name[20];
+        long memTotalSize;
+
+        //processID int to string
+        string str= getPidByName(procname);
+        string fileName = "/proc/"+str+"/status";
+        char *pach =(char*)fileName.data();
+        fpProc = fopen(pach,"r");
+
+        if(fpProc == NULL)
+        {
+            perror("fopen:");
+            LOG(WARNING, "打不开进程内存文件");
+            return;
+        }
+        //读取进程内存信息，在第16行
+        for(int i = 0; i < 16; i++)
+        {
+            fgets(buf,sizeof(buf),fp);
+        }
+        sscanf(buf,"%s%ld",name,&memTotalSize);
+        mem.procResTotalMem = memTotalSize;
+        fgets(buf,sizeof(buf),fp);
+        sscanf(buf,"%s%ld",name,&memTotalSize);
+        mem.procVRTTotalMem = memTotalSize;
+
+        mem.occpy = (float)mem.procResTotalMem/(float)mem.totalMem*100;
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

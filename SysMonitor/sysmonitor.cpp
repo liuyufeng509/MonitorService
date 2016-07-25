@@ -3,66 +3,45 @@
 #include "../config/qreadconfig.h"
 SysMonitor::SysMonitor(QObject *parent) : QObject(parent)
 {
-    memset(&systemResource,0,sizeof(systemResource));
-    systemResource.cpu.MediaProcessName = new char[255];
-    strcpy(systemResource.cpu.MediaProcessName, QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
-    systemResource.memory.processName = new char[255];
-    strcpy(systemResource.memory.processName, QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
-
-
-
     systemResourceMonitor = new SystemResourceMonitor;
+    procRes.procName = QReadConfig::getInstance()->getProcDogConf().strProcName;
 }
 
 SysMonitor::~SysMonitor()
 {
-    delete[] systemResource.cpu.MediaProcessName;
-    delete[] systemResource.memory.processName;
     delete systemResourceMonitor;
 }
 
 void SysMonitor::monitorProcess()
 {
+    LOG(INFO,"进程狗启动");
     systemResourceMonitor->MediaProcessMonitor();
 }
 
 void SysMonitor::monitorSysResource()
 {
-    //CPU
-    /*please input process name and thread ID in struct cpu*/
-    systemResourceMonitor->GetSysProThrCpuUsage(systemResource.cpu);
+    getSysResource(sysRes);
+    getProcResource(procRes);
 
-    //内存
-    /*please input process name and thread ID in struct memory*/
-   systemResourceMonitor->GetSysProThrMemUsage(systemResource.memory);        //获取系统系统内存空间/剩余大小/进程/线程内存使用率
+    LOG(INFO, "*************系统资源***************");
+    LOG(INFO, ("系统CPU占用率:"+QString("%1").arg(sysRes.cpu.occupy)+"%").toStdString().c_str());
+    LOG(INFO, ("系统全部内存:"+QString::number(sysRes.mem.totalMem>>10)+"M").toStdString().c_str());
+    LOG(INFO, ("系统空闲内存:"+QString::number(sysRes.mem.freeMem>>10)+"M").toStdString().c_str());
+    LOG(INFO, ("系统内存占用率:"+QString("%1").arg(sysRes.mem.occpy)+"%").toStdString().c_str());
+    for(int i=0; i<sysRes.disks.size(); i++)
+    {
+        LOG(INFO, ("硬盘："+QString::number(i+1)+" 路径："+sysRes.disks[i].mountPath).toStdString().c_str());
+        LOG(INFO, ("总大小："+QString::number(sysRes.disks[i].total_size>>10)+"M").toStdString().c_str());
+        LOG(INFO, ("非root可用大小："+QString::number(sysRes.disks[i].available_size>>10)+"M").toStdString().c_str());
+        LOG(INFO, ("空闲："+QString::number(sysRes.disks[i].free_size>>10)+"M").toStdString().c_str());
+        LOG(INFO, ("块个数："+QString::number(sysRes.disks[i].f_blocks>>10)+"M").toStdString().c_str());
+    }
 
-
-   //网络
-   systemResourceMonitor->GetNetInterfaceInfo(systemResource.net);                   //获取网络接口使用状况信息111
-
-
-   //------------test print-----------
-   cout<<"---------cpu-----------"<<endl;
-   cout<<"系统CPU使用率："<<systemResource.cpu.systemCpu<<endl;
-   cout<<"进程CPU使用率："<<systemResource.cpu.processCpu<< endl;
-   cout<<"线程CPU使用率："<<systemResource.cpu.threadCpu<< endl;
-   cout<<"---------内存-----------"<<endl;
-   cout<<"系统总内存："<<systemResource.memory.systemTotalMem<<" MB"<<endl;
-   cout<<"系统剩余内存："<<systemResource.memory.systemFreeMem <<" MB"<< endl;
-   cout<<"系统内存使用率："<<systemResource.memory.systemMemUsage << endl;
-   cout<<"进程内存使用率："<<systemResource.memory.processMemUsage << endl;
-   cout<<"线程内存使用率："<<systemResource.memory.threadMemUsage << endl;
-
-   cout<<"---------网络-----------"<<endl;
-   cout<<"网卡一名称："<<systemResource.net.netInterOneName << endl;
-   cout<<"网卡一上传速度："<<systemResource.net.netInterOneRtUpSpeed << " MB/S"<< endl;
-   cout<<"网卡一下载速度："<<systemResource.net.netInterOneRtDownSpeed <<" MB/S"<< endl;
-   cout<<"网卡一带宽使用率："<<systemResource.net.netInterOneBandwidthUsage <<endl;
-   cout<<"网卡二名称："<<systemResource.net.netInterTwoName << endl;
-   cout<<"网卡二上传速度："<<systemResource.net.netInterTwoRtUpSpeed <<" MB/S"<< endl;
-   cout<<"网卡二下载速度："<<systemResource.net.netInterTwoRtDownSpeed <<" MB/S"<< endl;
-   cout<<"网卡二带宽使用率："<<systemResource.net.netInterTwoBandwidthUsage <<endl;
-
-
+    LOG(INFO, "*************进程资源***************");
+    LOG(INFO, ("进程名称:"+procRes.procName).toStdString().c_str());
+    LOG(INFO, ("进程CPU占用率:"+QString("%1").arg(procRes.cpu.occupy)+"%").toStdString().c_str());
+    LOG(INFO, ("进程虚拟内存:"+QString::number(procRes.mem.procVRTTotalMem>>10)+"M").toStdString().c_str());
+    LOG(INFO, ("进程物理内存:"+QString::number(procRes.mem.procResTotalMem)+"K").toStdString().c_str());
+    LOG(INFO, ("进程内存占用率:"+QString("%1").arg(procRes.mem.occpy)+"%").toStdString().c_str());
 
 }

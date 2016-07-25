@@ -80,193 +80,195 @@ void StreamMonitor::doParseXml(QString xml)
     QDomElement type = message.firstChildElement();		//<TYPE>标签
     cout<<"type="<<type.text().toInt()<<flush;
 
-     switch (type.text().toInt()) {
-    case Rcv_Cameras_Info:
-    {
-        cout<<" Cameras List Parse"<<endl;
-        QDomElement action = message.firstChildElement("ACTION");          //<ACTION>
-        cout<<"action(1,init; 2,add; 3,del)="<<action.text().toInt()<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
+    switch (type.text().toInt()) {
+        case Rcv_Cameras_Info:
         {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            CameraStateInfo camInfo;
-            camInfo.cmareId = cameraId.text();
-            cout<<"cameraId="<<cameraId.text().toStdString()<<endl;
-            QDomElement udpAddr = equipment.lastChildElement();  //<UDP>
-            camInfo.udpAddr = udpAddr.text();
-            cout<<"udpAddr="<<udpAddr.text().toStdString()<<endl;
-            switch (action.text().toInt())
+            cout<<" Cameras List Parse"<<endl;
+            QDomElement action = message.firstChildElement("ACTION");          //<ACTION>
+            cout<<"action(1,init; 2,add; 3,del)="<<action.text().toInt()<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
             {
-            case 1:         //init
-            case 2:         //add
-            {
-                if(!camerasInfo.contains(camInfo))
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                CameraStateInfo camInfo;
+                camInfo.cmareId = cameraId.text();
+                cout<<"cameraId="<<cameraId.text().toStdString()<<endl;
+                QDomElement udpAddr = equipment.lastChildElement();  //<UDP>
+                camInfo.udpAddr = udpAddr.text();
+                cout<<"udpAddr="<<udpAddr.text().toStdString()<<endl;
+                switch (action.text().toInt())
                 {
-                    camerasInfo.append(camInfo);
+                case 1:         //init
+                case 2:         //add
+                {
+                    if(!camerasInfo.contains(camInfo))
+                    {
+                        camerasInfo.append(camInfo);
+                    }
                 }
-            }
-                break;
-            case 3:            //del
-            {
-                if(camerasInfo.contains(camInfo))
+                    break;
+                case 3:            //del
                 {
-                    camerasInfo.removeOne(camInfo);
+                    if(camerasInfo.contains(camInfo))
+                    {
+                        camerasInfo.removeOne(camInfo);
+                    }
                 }
-            }
-                break;
-            default:
-                break;
-            }
-        }
-    }
-        break;
-    case Rcv_Camera_Online:
-    {
-        cout<<" Cameras online Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
-        {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            QDomElement status = equipment.lastChildElement();          //<STATUS>
-
-            CameraStateInfo camInfo;
-            camInfo.cmareId = cameraId.text();
-            camInfo.online = status.text().toInt()==0? true:false;
-            if(camerasInfo.contains(camInfo))
-            {
-                camerasInfo[camerasInfo.indexOf(camInfo)].online=camInfo.online;
-            }else
-                camerasInfo.append(camInfo);
-            cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
-        }
-    }
-        break;
-    case RcV_Threads_Info:
-    {
-        cout<<" threads list Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
-        {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement threadId = equipment.firstChildElement(); //<THRID>
-            QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
-            QDomElement optType = equipment.lastChildElement();         //<OPTTYPE>
-            ThreadStateInfo threadInfo;
-            threadInfo.threadId = threadId.text();
-            threadInfo.action = action.text().toInt();
-            if(!threadsInfo.contains(threadInfo))
-            {
-                if(optType.text().toInt()==1)
-                    threadsInfo.append(threadInfo);
-            }else
-            {
-                if(optType.text().toInt()==2)           //1 add  2 delete
-                    threadsInfo.removeOne(threadInfo);
-                else
-                    threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
-            }
-            cout<<"threadId="<<threadId.text().toStdString()<<" action="<<action.text().toInt()<<endl;
-        }
-    }
-        break;
-    case Rcv_HisFile_Info:
-    {
-        cout<<" HisFile Info Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
-        {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            QDomElement filepath = equipment.lastChildElement();          //<FILE>
-            CameraStateInfo camInfo;
-            camInfo.cmareId=cameraId.text();
-            camInfo.hisVdSta.hisVdPath=filepath.text();
-            if(camerasInfo.contains(camInfo))
-            {
-                camerasInfo[camerasInfo.indexOf(camInfo)].hisVdSta.hisVdPath = camInfo.hisVdSta.hisVdPath;
-            }else
-                camerasInfo.append(camInfo);
-
-            //check the history file
-            checkHisFile(camerasInfo[camerasInfo.indexOf(camInfo)]);
-            cout<<"cameraId="<<cameraId.text().toStdString()
-               <<" filepath="<<filepath.text().toStdString()<<endl;
-        }
-    }
-        break;
-    case Rcv_Thread_Heart:
-    {
-        cout<<" Thread Heart Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
-        {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement threadId = equipment.firstChildElement(); //<THRID>
-            cout<<"threadId="<<threadId.text().toStdString()<<endl;
-            for(int j=0; j<threadsInfo.size(); j++)
-            {
-                if(threadsInfo[j].threadId == threadId.text())
-                {
-                    threadsInfo[j].heartime = time(NULL);
+                    break;
+                default:
                     break;
                 }
             }
         }
-    }
-        break;
-    case Rcv_RelVd_Res:
-    {
-        cout<<" Rel Vedeo Res Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
+            break;
+        case Rcv_Camera_Online:
         {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            QDomElement status = equipment.lastChildElement();          //<Status>
-            cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+            cout<<" Cameras online Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement status = equipment.lastChildElement();          //<STATUS>
+
+                CameraStateInfo camInfo;
+                camInfo.cmareId = cameraId.text();
+                camInfo.online = status.text().toInt()==0? true:false;
+                if(camerasInfo.contains(camInfo))
+                {
+                    camerasInfo[camerasInfo.indexOf(camInfo)].online=camInfo.online;
+                }else
+                    camerasInfo.append(camInfo);
+                cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+                //来一条在线状态就要转发给运维
+
+            }
         }
-    }
-        break;
-    case Rcv_HisVd_Res:
-    {
-        cout<<" Rel Vedeo Res Parse"<<endl;
-        //<Equipment>
-        QDomNodeList equipments = message.elementsByTagName("Equipment");
-        int nCount = equipments.count();
-        for(int i=0; i<nCount; i++)
+            break;
+        case RcV_Threads_Info:
         {
-            QDomNode eqNode = equipments.item(i);
-            QDomElement equipment = eqNode.toElement();         //<EquipMent>
-            QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-            QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
-            cout<<"cameraId="<<cameraId.text().toStdString()<<" httpurl(0 normal)="<<httpurl.text().toInt()<<endl;
-            checkHisURL(httpurl.text());
+            cout<<" threads list Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement threadId = equipment.firstChildElement(); //<THRID>
+                QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
+                QDomElement optType = equipment.lastChildElement();         //<OPTTYPE>
+                ThreadStateInfo threadInfo;
+                threadInfo.threadId = threadId.text();
+                threadInfo.action = action.text().toInt();
+                if(!threadsInfo.contains(threadInfo))
+                {
+                    if(optType.text().toInt()==1)
+                        threadsInfo.append(threadInfo);
+                }else
+                {
+                    if(optType.text().toInt()==2)           //1 add  2 delete
+                        threadsInfo.removeOne(threadInfo);
+                    else
+                        threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
+                }
+                cout<<"threadId="<<threadId.text().toStdString()<<" action="<<action.text().toInt()<<endl;
+            }
         }
-    }
-        break;
-    default:
-        break;
+            break;
+        case Rcv_HisFile_Info:
+        {
+            cout<<" HisFile Info Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement filepath = equipment.lastChildElement();          //<FILE>
+                CameraStateInfo camInfo;
+                camInfo.cmareId=cameraId.text();
+                camInfo.hisVdSta.hisVdPath=filepath.text();
+                if(camerasInfo.contains(camInfo))
+                {
+                    camerasInfo[camerasInfo.indexOf(camInfo)].hisVdSta.hisVdPath = camInfo.hisVdSta.hisVdPath;
+                }else
+                    camerasInfo.append(camInfo);
+
+                //check the history file
+                checkHisFile(camerasInfo[camerasInfo.indexOf(camInfo)]);
+                cout<<"cameraId="<<cameraId.text().toStdString()
+                   <<" filepath="<<filepath.text().toStdString()<<endl;
+            }
+        }
+            break;
+        case Rcv_Thread_Heart:
+        {
+            cout<<" Thread Heart Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement threadId = equipment.firstChildElement(); //<THRID>
+                cout<<"threadId="<<threadId.text().toStdString()<<endl;
+                for(int j=0; j<threadsInfo.size(); j++)
+                {
+                    if(threadsInfo[j].threadId == threadId.text())
+                    {
+                        threadsInfo[j].heartime = time(NULL);
+                        break;
+                    }
+                }
+            }
+        }
+            break;
+        case Rcv_RelVd_Res:
+        {
+            cout<<" Rel Vedeo Res Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement status = equipment.lastChildElement();          //<Status>
+                cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+            }
+        }
+            break;
+        case Rcv_HisVd_Res:
+        {
+            cout<<" Rel Vedeo Res Parse"<<endl;
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
+                cout<<"cameraId="<<cameraId.text().toStdString()<<" httpurl(0 normal)="<<httpurl.text().toInt()<<endl;
+                checkHisURL(httpurl.text());
+            }
+        }
+            break;
+        default:
+            break;
     }
 
 }
@@ -328,7 +330,7 @@ void StreamMonitor::sendDiskState()
         QDomElement equip = doc.createElement("Equipment");//<Equipment>
         message.appendChild(equip);
         QDomElement mPath = doc.createElement("MPath");//<MPath>
-        QDomText mPath_str= doc.createTextNode(diskInfos[i].mountPath);
+        QDomText mPath_str= doc.createTextNode(diskInfos[i].baseInfo.mountPath);
         mPath.appendChild(mPath_str);
         equip.appendChild(mPath);
         QDomElement status = doc.createElement("Status");//<Status>
@@ -348,15 +350,15 @@ void StreamMonitor::monitorDiskInfo()
     for(int i=0; i<QReadConfig::getInstance()->getDiskCong().diskPaths.size(); i++)
     {
         DiskStateInfo disk;
-        disk.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
-        QFileInfo fileInfo(disk.mountPath);
-        QString fileName = disk.mountPath[disk.mountPath.length()-1]=='/'? disk.mountPath+"test":disk.mountPath+"/test";
+        disk.baseInfo.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
+        QFileInfo fileInfo(disk.baseInfo.mountPath);
+        QString fileName = disk.baseInfo.mountPath[disk.baseInfo.mountPath.length()-1]=='/'? disk.baseInfo.mountPath+"test":disk.baseInfo.mountPath+"/test";
         QFile file(fileName);
-        getDiskInfo((char*)disk.mountPath.toStdString().c_str(), disk);
+        getDiskInfo((char*)disk.baseInfo.mountPath.toStdString().c_str(), disk);
         if(!fileInfo.isDir())       //加载目录是否存在判断硬盘是否加载
         {
             disk.state = DiskStateInfo::CAN_NOT_MOUNT;
-        }else if(disk.free_size<100*1024*1024)      //硬盘空闲空间小于100M时，硬盘空间不足
+        }else if(disk.baseInfo.free_size<100*1024*1024)      //硬盘空闲空间小于100M时，硬盘空间不足
         {
             disk.state = DiskStateInfo::DISK_OVER_LOAD;
         }else if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))         //是否能打开
@@ -822,7 +824,7 @@ void StreamMonitor::printDiskInfo()
 {
     for(int i=0; i<diskInfos.size(); i++)
     {
-         cout<<"路径为"<<diskInfos[i].mountPath.toStdString()<<"的硬盘状态:"<<diskErrInfoMap.value(diskInfos[i].state).toStdString()<<endl;
+         cout<<"路径为"<<diskInfos[i].baseInfo.mountPath.toStdString()<<"的硬盘状态:"<<diskErrInfoMap.value(diskInfos[i].state).toStdString()<<endl;
     }
 }
 

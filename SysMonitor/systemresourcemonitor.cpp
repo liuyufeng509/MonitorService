@@ -681,6 +681,7 @@ void SystemResourceMonitor::KillAndStartProcess(char* processName)
     fileName = (char*)str1.data();
     //cout<<fileName<<endl;
     system(fileName);
+    LOG(INFO, ("KillAndStartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 
 void SystemResourceMonitor::StartProcess()
@@ -693,6 +694,7 @@ void SystemResourceMonitor::StartProcess()
     fileName = (char*)str1.data();
     //cout<<fileName<<endl;
     system(fileName);
+    LOG(INFO, ("StartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 
 void SystemResourceMonitor::MediaProcessMonitor()
@@ -700,16 +702,18 @@ void SystemResourceMonitor::MediaProcessMonitor()
     char *processName = new char[255];
     memset(processName, 0, 255);
     strcpy(processName, QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
-    int processID = GetMediaProcessID(processName);
+    int processID = atoi(getPidByName(processName).c_str());
     if(processID==0)            //进程号为0，说明未启动
     {
-        cout<<"进程id为0，程序未启动,启动之"<<endl;
+       // cout<<"进程id为0，程序未启动,启动之"<<endl;
+        LOG(INFO,"进程id为0，程序未启动,启动之");
         StartProcess();
     }else                               //进程如果已启动，判断进程状态
     {
         char state[2] = {0};
         GetProcessState(processID,state);
         cout<<"进程运行状态："<<state<<endl;
+        LOG(INFO,("进程运行状态:"+QString(state[0])).toStdString().c_str());
         if(state[0] == 'Z')
         {
             KillAndStartProcess(processName);

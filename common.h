@@ -12,6 +12,17 @@
 #include <sys/statfs.h>
 #include <sys/vfs.h>
 #include <errno.h>
+//硬盘基本信息
+struct DiskBaseInfo
+{
+    QString    mountPath;       //硬盘的挂载路径
+
+    qint64 total_size ;      //硬盘总大小
+    qint64 available_size;                //非root用户可以用的磁盘空间大小
+    qint64 free_size;                                  //硬盘的所有剩余空间
+    qint64 f_blocks;                                //块个数
+};
+
 //硬盘状态信息，根据此信息判断是否进行自恢复和通知流媒体服务
 struct DiskStateInfo{
     enum DiskState{
@@ -21,15 +32,46 @@ struct DiskStateInfo{
         CAN_NOT_MOUNT,
         DISK_OVER_LOAD,
     };
-    QString    mountPath;       //硬盘的挂载路径
+    DiskBaseInfo baseInfo;
     DiskState state;        //暂时只有硬盘状态，其他的信息如读写速度等，后续资源监控时添加
-    qint64 total_size ;      //硬盘总大小
-    qint64 available_size;                //非root用户可以用的磁盘空间大小
-    qint64 free_size;                                  //硬盘的所有剩余空间
-    qint64 f_blocks;                                //块个数
 };
 
-//CPU信息
+//CPU 信息
+struct CPUInfo
+{
+    float occupy;           //占用率
+};
+
+//Mem 信息
+struct MemInfo
+{
+    //系统内存的属性
+    long totalMem;           //内存大小  单位（K）
+    long freeMem;            //空闲内存大小 单位（K）
+
+    //进程内存属性
+    long procVRTTotalMem;       //进程所占虚拟内存大小 单位（K）
+    long procResTotalMem;       //进程所占实际物理内存大小 单位（K）
+
+    //进程及系统内存属性
+    float occpy;            //占用率
+};
+
+//系统资源信息
+struct SysResource
+{
+    CPUInfo cpu;
+    MemInfo mem;
+    QList<DiskBaseInfo> disks;       //多个硬盘
+};
+
+//进程资源信息
+struct ProcResource
+{
+    QString procName;
+    CPUInfo cpu;
+    MemInfo mem;
+};
 
 //历史文件是否正常
 struct HisVdFileState
@@ -161,5 +203,36 @@ std::string getPidByName(char* task_name);  //根据进程名获取pid
 int kill_spider_backgroud(char* task_name); //依据进程名，杀死进程
 
 int getDiskInfo(char *path, DiskStateInfo &diskInfo);   //获取磁盘状态
+
+void getSysResource(SysResource &sysRes);               //获取系统资源信息
+void getProcResource(ProcResource &procRes);            //获取进程的资源信息
+
+//获取cpu信息的结构体及函数
+typedef struct procstat {
+     char processorName[20];
+     unsigned int user;
+     unsigned int nice;
+     unsigned int system;
+     unsigned int idle;
+     unsigned int iowait;
+     unsigned int irq;
+     unsigned int softirq;
+     unsigned int stealstolen;
+     unsigned int guest;
+
+     long int utime;
+     long int stime;
+     long int cutime;
+     long int cstime;
+} Procstat;
+
+void getCPUInfo(CPUInfo &cpu, char*procname="");    //获取cpu信息
+void getProcCpuStats(Procstat & ps, int processID);//获取进程cpu信息
+void  getCPUStatus(Procstat& ps);           //获取系统cpu信息
+float calculateCPUUse(Procstat ps1, Procstat ps2);//计算系统cpu利用率
+float calculateProcCPUUse(Procstat ps1, Procstat ps2);//计算进程cpu利用率
+
+
+void getMemInfo(MemInfo &mem, char* procname="");         //获取mem信息
 
 #endif // COMMON_H

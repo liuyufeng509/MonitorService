@@ -2,10 +2,12 @@
 #include<iostream>
 void SysMonitorThread::run()
 {
+    LOG(INFO,"SysMonitorThread start");
     proDogtimer = new QTimer;
     sysMonitor = new SysMonitor;
     connect(proDogtimer, SIGNAL(timeout()), sysMonitor, SLOT(monitorProcess()));
     std::cout<<"process dog  timer begin"<<std::endl;
+    sysMonitor->monitorProcess();       //先手动调一遍，然后在从定时器论询。
     proDogtimer->start(QReadConfig::getInstance()->getProcDogConf().nTimer);
 
     sysTimer = new QTimer;
