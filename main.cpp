@@ -40,7 +40,7 @@ void init_daemon()
 }
 int main(int argc, char *argv[])
 {
-    // init_daemon();
+   // init_daemon();
     QCoreApplication a(argc, argv);
 
     //读取配置文件
@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
     LOG(WARNING, "Start MonitorService");
 
     //启动系统资源监控线程，进程狗应该是属于系统资源监控的一部分
-    //SysMonitorThread sysMonitorThread;
-    //sysMonitorThread.start();
+    SysMonitorThread sysMonitorThread;
+    sysMonitorThread.start();
 
 
     //启动业务逻辑监控线程

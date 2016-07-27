@@ -24,7 +24,7 @@ void QReadConfig::readConfigFile(QString filePath)
 
     diskConf.diskPaths = configIniRead->value("Disk/tmpfilepath").toString().split('#');
     diskConf.diskFileNames = configIniRead->value("Disk/diskfilename").toString().split('#');
-
+    diskConf.minFreeSize = configIniRead->value("Disk/minSize").toInt();
     cameraSvrConf.bOpen = configIniRead->value("CameraSvr/open").toBool();
     cameraSvrConf.timer = configIniRead->value("CameraSvr/timer").toInt();
     cameraSvrConf.vdPath = configIniRead->value("CameraSvr/vdPath").toString();
@@ -64,46 +64,46 @@ LogInfo QReadConfig::getLogInfo()
 
 void QReadConfig::printInfo()
 {
-    cout<<"******************ProcessDogConfig*********************"<<endl;
-    cout<<"procDogConf.bOpen="<<procDogConf.bOpen<<endl;
-    cout<<"procDogConf.nTimer="<<procDogConf.nTimer<<endl;
-    cout<<"procDogConf.strProcName="<<procDogConf.strProcName.toStdString()<<endl;
-    cout<<"procDogConf.strPath="<<procDogConf.strPath.toStdString()<<endl;
+    LOG(INFO, "******************ProcessDogConfig*********************");
+    qInfo()<<"procDogConf.bOpen="<<(procDogConf.bOpen?"true":"false");
+    qInfo()<<"procDogConf.nTimer="<<procDogConf.nTimer;
+    qInfo()<<"procDogConf.strProcName="<<procDogConf.strProcName;
+    qInfo()<<"procDogConf.strPath="<<procDogConf.strPath;
 
-    cout<<"******************DomainSockConfig*********************"<<endl;
-    cout<<"domainSockConf.servername="<<domainSockConf.serverName.toStdString()<<endl;
-    cout<<"domainSockConf.clientname="<<domainSockConf.clientName.toStdString()<<endl;
-    cout<<"domainSockConf.checkTimer="<<domainSockConf.checkTimer<<endl;
+    qInfo()<<"******************DomainSockConfig*********************";
+    qInfo()<<"domainSockConf.servername="<<domainSockConf.serverName;
+    qInfo()<<"domainSockConf.clientname="<<domainSockConf.clientName;
+    qInfo()<<"domainSockConf.checkTimer="<<domainSockConf.checkTimer;
 
-    cout<<"******************SysResourceConfig*********************"<<endl;
-    cout<<"sysResConf.bOpen="<<sysResConf.bOpen<<endl;
-    cout<<"sysResConf.nTimer="<<sysResConf.timer<<endl;
+    qInfo()<<"******************SysResourceConfig*********************";
+    qInfo()<<"sysResConf.bOpen="<<sysResConf.bOpen;
+    qInfo()<<"sysResConf.nTimer="<<sysResConf.timer;
 
-    cout<<"******************CameraSvrConfig*********************"<<endl;
-    cout<<"cameraSvrConf.bOpen="<<cameraSvrConf.bOpen<<endl;
-    cout<<"cameraSvrConf.nTimer="<<cameraSvrConf.timer<<endl;
-    cout<<"cameraSvrConf.vdPath="<<cameraSvrConf.vdPath.toStdString()<<endl;
+    qInfo()<<"******************CameraSvrConfig*********************";
+    qInfo()<<"cameraSvrConf.bOpen="<<cameraSvrConf.bOpen;
+    qInfo()<<"cameraSvrConf.nTimer="<<cameraSvrConf.timer;
+    qInfo()<<"cameraSvrConf.vdPath="<<cameraSvrConf.vdPath;
 
-    cout<<"******************DBSvrConfig*********************"<<endl;
-    cout<<"dbSvrConf.bOpen="<<dbSvrConf.bOpen<<endl;
-    cout<<"dbSvrConf.nTimer="<<dbSvrConf.timer<<endl;
-    cout<<"dbSvrConf.dbName="<<dbSvrConf.dbName.toStdString()<<endl;
+    qInfo()<<"******************DBSvrConfig*********************";
+    qInfo()<<"dbSvrConf.bOpen="<<dbSvrConf.bOpen;
+    qInfo()<<"dbSvrConf.nTimer="<<dbSvrConf.timer;
+    qInfo()<<"dbSvrConf.dbName="<<dbSvrConf.dbName;
 
-    cout<<"******************ThreadSvrConfig*********************"<<endl;
-    cout<<"threadSvrConf.bOpen="<<threadSvrConf.bOpen<<endl;
-    cout<<"threadSvrConf.nTimer="<<threadSvrConf.timer<<endl;
+    qInfo()<<"******************ThreadSvrConfig*********************";
+    qInfo()<<"threadSvrConf.bOpen="<<threadSvrConf.bOpen;
+    qInfo()<<"threadSvrConf.nTimer="<<threadSvrConf.timer;
 
-    cout<<"******************RelAndHisVideoConfig*********************"<<endl;
-    cout<<"relAndHisVideoConf.bOpen="<<relAndHisVideoConf.bOpen<<endl;
-    cout<<"relAndHisVideoConf.nTimer="<<relAndHisVideoConf.timer<<endl;
+    qInfo()<<"******************RelAndHisVideoConfig*********************";
+    qInfo()<<"relAndHisVideoConf.bOpen="<<relAndHisVideoConf.bOpen;
+    qInfo()<<"relAndHisVideoConf.nTimer="<<relAndHisVideoConf.timer;
 
-    cout<<"******************gsoapConf*********************"<<endl;
-    cout<<"gsoapConf.soapEndpoint="<<gsoapConf.soapEndpoint.toStdString()<<endl;
-    cout<<"gsoapConf.sendTimeout="<<gsoapConf.sendTimeout<<endl;
-    cout<<"gsoapConf.recvTimeout="<<gsoapConf.recvTimeout<<endl;
-    cout<<"gsoapConf.connTimeout="<<gsoapConf.connTimeout<<endl;
-    cout<<"gsoapConf.userID="<<gsoapConf.userID.toStdString()<<endl;
-    cout<<"gsoapConf.passwd="<<gsoapConf.passwd.toStdString()<<endl;
+    qInfo()<<"******************gsoapConf*********************";
+    qInfo()<<"gsoapConf.soapEndpoint="<<gsoapConf.soapEndpoint;
+    qInfo()<<"gsoapConf.sendTimeout="<<gsoapConf.sendTimeout;
+    qInfo()<<"gsoapConf.recvTimeout="<<gsoapConf.recvTimeout;
+    qInfo()<<"gsoapConf.connTimeout="<<gsoapConf.connTimeout;
+    qInfo()<<"gsoapConf.userID="<<gsoapConf.userID;
+    qInfo()<<"gsoapConf.passwd="<<gsoapConf.passwd;
 }
 
 ProcessDogConfig QReadConfig::getProcDogConf()

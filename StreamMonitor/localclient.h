@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QLocalSocket>
 #include <QString>
+#include "../common.h"
 class LocalClient : public QObject
 {
     Q_OBJECT

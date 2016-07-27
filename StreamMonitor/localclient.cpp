@@ -12,7 +12,7 @@ LocalClient::LocalClient():socket(NULL)
 
 void LocalClient::disConnected()
 {
-    cout<<"connection disconnected"<<endl;
+    LOG(WARNING,"connection disconnected");
     disconnect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
             this, SLOT(displayError(QLocalSocket::LocalSocketError)));
     disconnect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
@@ -33,11 +33,11 @@ void LocalClient::requestConnection()
     socket->connectToServer(m_servName);
     if(socket->state()==QLocalSocket::ConnectedState)
     {
-        cout<<"new connection to  server "<<m_servName.toStdString()<<" build"<<endl;
+        qInfo()<<"new connection to  server "<<m_servName<<" build";
         isConnected = true;
     }else
     {
-        cout<<"new connection to  server "<<m_servName.toStdString()<<" fail"<<endl;
+        qWarning()<<"new connection to  server "<<m_servName<<" fail";
     }
 }
 
@@ -47,10 +47,10 @@ void LocalClient::writeData(QByteArray data)
     if(isConnected)
     {
         socket->write(data);
-        cout<<"发送数据："<<QString(data).toStdString()<<endl;
+        qInfo()<<"发送数据："<<QString(data)<<endl;
     }else
     {
-       // cout<<"LocalClient writeData err"<<socket->errorString().toStdString()<<" 请求连接" <<endl;
+        qWarning()<<"LocalClient writeData err"<<socket->errorString()<<"请求连接";
         requestConnection();
     }
 }
@@ -59,15 +59,15 @@ void LocalClient::displayError(QLocalSocket::LocalSocketError socketError)
 {
     switch (socketError) {
     case QLocalSocket::ServerNotFoundError:
-       cout<<"host 未找到，请检查hostname和端口设置"<<endl;
+       qCritical()<<"host 未找到，请检查hostname和端口设置";
        break;
     case QLocalSocket::ConnectionRefusedError:
-        cout<<"链接被对端拒绝，请确认远端服务器正在运行，并检查hostname和port是否设置正确"<<endl;
+        qCritical()<<"链接被对端拒绝，请确认远端服务器正在运行，并检查hostname和port是否设置正确";
         break;
     case QLocalSocket::PeerClosedError:
         break;
     default:
-        cout<<"发生如下错误:"<<socket->errorString().toStdString()<<endl;
+        qCritical()<<"发生如下错误:"<<socket->errorString();
        }
 
     //发生错误，连接可能断开

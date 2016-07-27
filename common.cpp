@@ -6,7 +6,13 @@
 #include"config/qreadconfig.h"
 #include <unistd.h>
 #include <iostream>
+#include <QDomDocument>
 using namespace std;
+
+bool isOMInited = false;
+QString uuid = "";
+StreamInfoToOM strToOM;
+
 #define MAX_SIZE  255
 QString getCwdPath()
 {
@@ -352,8 +358,79 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
     }
 }
 
+bool gNetMasterReportData(const char *szStatusData)
+{
+    if(isOMInited)
+    {
+        if(!NetMasterReportData(szStatusData))
+        {
+            LOG(INFO, ">>>>>> [NetMasterReportData] is Success. <<<<<<" );
+            return true;
+        }
+        else
+        {
+            LOG(INFO, ">>>>>> [NetMasterReportData] is Fail! <<<<<<" );
+            return false;
+        }
+    }else
+    {
+        LOG(WARNING, ">>>>>> [NetMasterReportData] is Faild. OM is not Init <<<<<<" );
+        return false;
+    }
+}
 
 
+bool SendDataToOM(const OMData &data)
+{
+    QDomDocument doc;
+    QDomProcessingInstruction instruction;
+    instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+    doc.appendChild(instruction);
+
+    QDomElement message = doc.createElement("message");  //<message>
+    doc.appendChild(message);
+    QDomElement action = doc.createElement("action");//<action>
+    QDomText actionContent = doc.createTextNode(data.action);
+    action.appendChild(actionContent);
+    message.appendChild(action);
+
+    QDomElement equip = doc.createElement("Equipment");//<Equipment>
+    message.appendChild(equip);
+    QDomElement ID = doc.createElement("ID");
+    QDomText id_str = doc.createTextNode(QString::number(data.ID));
+    ID.appendChild(id_str);
+
+    QDomElement devtype = doc.createElement("devtype");
+    QDomText devtype_str = doc.createTextNode(data.uuid);
+    devtype.appendChild(devtype_str);
+
+    QDomElement device = doc.createElement("device");
+    QDomText device_str = doc.createTextNode(data.devId);
+    device.appendChild(device_str);
+
+    QDomElement type = doc.createElement("type");
+    QDomText type_str = doc.createTextNode(data.type);
+    type.appendChild(type_str);
+
+    QDomElement status = doc.createElement("status");
+    QDomText status_str = doc.createTextNode(data.status);
+    status.appendChild(status_str);
+
+    QDomElement remark = doc.createElement("remark");
+    QDomText remark_str = doc.createTextNode(data.remark);
+    remark.appendChild(remark_str);
+
+    equip.appendChild(ID);
+    equip.appendChild(devtype);
+    equip.appendChild(device);
+    equip.appendChild(type);
+    equip.appendChild(status);
+    equip.appendChild(remark);
+
+    QString xmlStr = doc.toString();
+
+    return gNetMasterReportData(xmlStr.toStdString().c_str());
+}
 
 
 

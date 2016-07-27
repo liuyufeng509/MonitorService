@@ -297,7 +297,6 @@ void SystemResourceMonitor::GetProcessMemUsage(memory_t& memoryInfo)
     //memoryInfo.processName = "HbMedia";
     GetProcessUseMem(memoryInfo);
     GetSystemMemTotalAndFree(memoryInfo);
-    //cout<<"===="<<memoryInfo.processUseMem<<"==="<<memoryInfo.systemTotalMem<<endl;
     memoryInfo.processMemUsage = ((float)memoryInfo.processUseMem) / ((float)memoryInfo.systemTotalMem)*100;
 }
 
@@ -671,7 +670,6 @@ void SystemResourceMonitor::KillAndStartProcess(char* processName)
     strKill = t;
 
     string fileName1 = "kill -9 " + strKill;
-    //cout<<fileName<<":";
     char *p =(char*)fileName1.data();
     //
     system(p);
@@ -692,7 +690,6 @@ void SystemResourceMonitor::StartProcess()
     cout<<str1<<endl;
     char* fileName = NULL;
     fileName = (char*)str1.data();
-    //cout<<fileName<<endl;
     system(fileName);
     LOG(INFO, ("StartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
@@ -705,14 +702,12 @@ void SystemResourceMonitor::MediaProcessMonitor()
     int processID = atoi(getPidByName(processName).c_str());
     if(processID==0)            //进程号为0，说明未启动
     {
-       // cout<<"进程id为0，程序未启动,启动之"<<endl;
         LOG(INFO,"进程id为0，程序未启动,启动之");
         StartProcess();
     }else                               //进程如果已启动，判断进程状态
     {
         char state[2] = {0};
         GetProcessState(processID,state);
-        cout<<"进程运行状态："<<state<<endl;
         LOG(INFO,("进程运行状态:"+QString(state[0])).toStdString().c_str());
         if(state[0] == 'Z')
         {

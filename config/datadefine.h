@@ -77,6 +77,7 @@ struct DiskConfig
     }
     QStringList diskPaths;       //硬盘们的挂载路径
     QStringList diskFileNames;//磁盘的文件名
+    int         minFreeSize;    //硬盘剩余空间的最小值（单位G）
 };
 
 

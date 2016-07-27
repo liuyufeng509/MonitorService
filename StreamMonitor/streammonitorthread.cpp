@@ -8,11 +8,13 @@ StreamMonitorThread::StreamMonitorThread(QObject *parent)
 void StreamMonitorThread::init()
 {
     //创建线程对象时，先把socket监听起来
-LocalServer::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().serverName);
-LocalServer::getInstance()->listen();
+    LocalServer::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().serverName);
+    LocalServer::getInstance()->listen();
+    LOG(INFO, "LocalServer 开始监听");
 
-LocalClient::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().clientName);
-LocalClient::getInstance()->requestConnection();
+    LocalClient::getInstance()->setServName(QReadConfig::getInstance()->getDomainSockConf().clientName);
+    LocalClient::getInstance()->requestConnection();
+    LOG(INFO, "LocalClient 请求建立链接");
 }
 
 void StreamMonitorThread::run()

@@ -55,37 +55,49 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
 
     manager = new QNetworkAccessManager(this);      // url request manager
 
+
+    //初始化 diskInfos
+
+    for(int i=0; i<QReadConfig::getInstance()->getDiskCong().diskPaths.size(); i++)
+    {
+
+        DiskStateInfo disk;
+        disk.baseInfo.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
+        disk.state = DiskStateInfo::DISK_NORMAL;
+        diskInfos.append(disk);
+    }
+
  }
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
 {
-    cout<<"rcv xml msg:" <<endl;
-    cout<<xml.toStdString()<<endl;
+    LOG(INFO,"rcv xml msg:");
+    qInfo()<<xml;
     QDomDocument document;
     QString error;
     int row = 0, column = 0;
     if(!document.setContent(xml, false, &error, &row, &column))     //加载xml内容
     {
-        cout<<(QString("parse file failed at line row and column") + QString::number(row, 10) + QString(",") + QString::number(column, 10)).toStdString()<<endl;
+        qCritical()<<(QString("parse file failed at line row and column") + QString::number(row, 10) + QString(",") + QString::number(column, 10));
         return ;
     }
     if(document.isNull())
     {
-        cout<<"document is null"<<endl;
+        LOG(WARNING,"document is null");
         return ;
     }
 
     //解析
     QDomElement message = document.documentElement();        //<message>
     QDomElement type = message.firstChildElement();		//<TYPE>标签
-    cout<<"type="<<type.text().toInt()<<flush;
+    qInfo()<<"type="<<type.text().toInt();
 
     switch (type.text().toInt()) {
         case Rcv_Cameras_Info:
         {
-            cout<<" Cameras List Parse"<<endl;
+            qInfo()<<" Cameras List Parse";
             QDomElement action = message.firstChildElement("ACTION");          //<ACTION>
-            cout<<"action(1,init; 2,add; 3,del)="<<action.text().toInt()<<endl;
+            qInfo()<<"action(1,init; 2,add; 3,del)="<<action.text().toInt();
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -96,10 +108,13 @@ void StreamMonitor::doParseXml(QString xml)
                 QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
                 CameraStateInfo camInfo;
                 camInfo.cmareId = cameraId.text();
-                cout<<"cameraId="<<cameraId.text().toStdString()<<endl;
-                QDomElement udpAddr = equipment.lastChildElement();  //<UDP>
+                qInfo()<<"cameraId="<<cameraId.text();
+                QDomElement udpAddr = equipment.lastChildElement("UDP");  //<UDP>
                 camInfo.udpAddr = udpAddr.text();
-                cout<<"udpAddr="<<udpAddr.text().toStdString()<<endl;
+                qInfo()<<"udpAddr="<<udpAddr.text();
+
+                QDomElement uuid = equipment.firstChildElement("UUID");     //<UUID>
+                camInfo.uuid = uuid.text();
                 switch (action.text().toInt())
                 {
                 case 1:         //init
@@ -127,7 +142,7 @@ void StreamMonitor::doParseXml(QString xml)
             break;
         case Rcv_Camera_Online:
         {
-            cout<<" Cameras online Parse"<<endl;
+            qInfo()<<" Cameras online Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -146,15 +161,20 @@ void StreamMonitor::doParseXml(QString xml)
                     camerasInfo[camerasInfo.indexOf(camInfo)].online=camInfo.online;
                 }else
                     camerasInfo.append(camInfo);
-                cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
                 //来一条在线状态就要转发给运维
-
+                OMData om;
+                om.uuid = uuid;
+                om.devId= camInfo.uuid;
+                om.type="j7";
+                om.status=camInfo.online;
+                SendDataToOM(om);
             }
         }
             break;
         case RcV_Threads_Info:
         {
-            cout<<" threads list Parse"<<endl;
+            qInfo()<<" threads list Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -162,9 +182,9 @@ void StreamMonitor::doParseXml(QString xml)
             {
                 QDomNode eqNode = equipments.item(i);
                 QDomElement equipment = eqNode.toElement();         //<EquipMent>
-                QDomElement threadId = equipment.firstChildElement(); //<THRID>
+                QDomElement threadId = equipment.firstChildElement("THRID"); //<THRID>
                 QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
-                QDomElement optType = equipment.lastChildElement();         //<OPTTYPE>
+                QDomElement optType = equipment.lastChildElement("OPTTYPE");         //<OPTTYPE>
                 ThreadStateInfo threadInfo;
                 threadInfo.threadId = threadId.text();
                 threadInfo.action = action.text().toInt();
@@ -179,13 +199,13 @@ void StreamMonitor::doParseXml(QString xml)
                     else
                         threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
                 }
-                cout<<"threadId="<<threadId.text().toStdString()<<" action="<<action.text().toInt()<<endl;
+                qInfo()<<"threadId="<<threadId.text()<<" action="<<action.text().toInt();
             }
         }
             break;
         case Rcv_HisFile_Info:
         {
-            cout<<" HisFile Info Parse"<<endl;
+            qInfo()<<" HisFile Info Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -206,14 +226,14 @@ void StreamMonitor::doParseXml(QString xml)
 
                 //check the history file
                 checkHisFile(camerasInfo[camerasInfo.indexOf(camInfo)]);
-                cout<<"cameraId="<<cameraId.text().toStdString()
-                   <<" filepath="<<filepath.text().toStdString()<<endl;
+                qInfo()<<"cameraId="<<cameraId.text()
+                   <<" filepath="<<filepath.text();
             }
         }
             break;
         case Rcv_Thread_Heart:
         {
-            cout<<" Thread Heart Parse"<<endl;
+            qInfo()<<" Thread Heart Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -222,7 +242,7 @@ void StreamMonitor::doParseXml(QString xml)
                 QDomNode eqNode = equipments.item(i);
                 QDomElement equipment = eqNode.toElement();         //<EquipMent>
                 QDomElement threadId = equipment.firstChildElement(); //<THRID>
-                cout<<"threadId="<<threadId.text().toStdString()<<endl;
+                qInfo()<<"threadId="<<threadId.text();
                 for(int j=0; j<threadsInfo.size(); j++)
                 {
                     if(threadsInfo[j].threadId == threadId.text())
@@ -236,7 +256,7 @@ void StreamMonitor::doParseXml(QString xml)
             break;
         case Rcv_RelVd_Res:
         {
-            cout<<" Rel Vedeo Res Parse"<<endl;
+            qInfo()<<" Rel Vedeo Res Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -246,13 +266,13 @@ void StreamMonitor::doParseXml(QString xml)
                 QDomElement equipment = eqNode.toElement();         //<EquipMent>
                 QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
                 QDomElement status = equipment.lastChildElement();          //<Status>
-                cout<<"cameraId="<<cameraId.text().toStdString()<<" status(0 normal)="<<status.text().toInt()<<endl;
+                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
             }
         }
             break;
         case Rcv_HisVd_Res:
         {
-            cout<<" Rel Vedeo Res Parse"<<endl;
+            qInfo()<<" Rel Vedeo Res Parse";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -262,8 +282,37 @@ void StreamMonitor::doParseXml(QString xml)
                 QDomElement equipment = eqNode.toElement();         //<EquipMent>
                 QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
                 QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
-                cout<<"cameraId="<<cameraId.text().toStdString()<<" httpurl(0 normal)="<<httpurl.text().toInt()<<endl;
+                qInfo()<<"cameraId="<<cameraId.text()<<" httpurl(0 normal)="<<httpurl.text().toInt();
                 checkHisURL(httpurl.text());
+            }
+        }
+            break;
+        case Rcv_YUNWEI_Info:
+        {
+            QDomElement uuidEl = message.firstChildElement("UUID");           //<UUID>
+            QDomElement addr = message.firstChildElement("ADDRESS");               //<ADDRESS>
+            uuid = uuidEl.text();
+            if(isOMInited)
+            {
+                if(!NetMasterDestroy())
+                {
+                    LOG(INFO, ">>>>>> [NetMasterDestroy] is Success. <<<<<<\n");
+                }
+                else
+                {
+                    LOG(INFO, ">>>>>> [NetMasterDestroy] is Fail! <<<<<<\n");
+                    LOG(INFO, ("OM INFO:  uuid:"+uuidEl.text() +" ADDR:"+addr.text()).toStdString().c_str());
+                    isOMInited = false;
+                    if(!NetMasterInit(addr.text().toStdString().c_str(), uuidEl.text().toStdString().c_str()))
+                    {
+                        LOG(INFO, ">>>>>> [NetMasterInit] is Success. <<<<<<");
+                        isOMInited = true;
+                    }else
+                    {
+                        LOG(INFO, ">>>>>> [NetMasterInit] is Fail! <<<<<<" );
+                        isOMInited = false;
+                    }
+                }
             }
         }
             break;
@@ -346,34 +395,91 @@ void StreamMonitor::sendDiskState()
 void StreamMonitor::monitorDiskInfo()
 {
     //1.检测硬盘是否可以创建文件
-    diskInfos.clear();
-    for(int i=0; i<QReadConfig::getInstance()->getDiskCong().diskPaths.size(); i++)
+    //diskInfos.clear();
+    bool isAllBad = true;           //所有硬盘都坏掉的时候，就是流媒体服务坏掉了。
+    for(int i=0; i<diskInfos.size(); i++)
     {
-        DiskStateInfo disk;
-        disk.baseInfo.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
-        QFileInfo fileInfo(disk.baseInfo.mountPath);
-        QString fileName = disk.baseInfo.mountPath[disk.baseInfo.mountPath.length()-1]=='/'? disk.baseInfo.mountPath+"test":disk.baseInfo.mountPath+"/test";
+        bool isStChanged = false;       //状态变化了才上报
+        QFileInfo fileInfo(diskInfos[i].baseInfo.mountPath);
+        QString fileName = diskInfos[i].baseInfo.mountPath[diskInfos[i].baseInfo.mountPath.length()-1]=='/'? diskInfos[i].baseInfo.mountPath+"test":diskInfos[i].baseInfo.mountPath+"/test";
         QFile file(fileName);
-        getDiskInfo((char*)disk.baseInfo.mountPath.toStdString().c_str(), disk);
+        getDiskInfo((char*)diskInfos[i].baseInfo.mountPath.toStdString().c_str(), diskInfos[i]);
+
+        OMData om;
+        om.uuid = uuid;
+        om.devId = uuid;
+        om.type="j14";
+
         if(!fileInfo.isDir())       //加载目录是否存在判断硬盘是否加载
         {
-            disk.state = DiskStateInfo::CAN_NOT_MOUNT;
-        }else if(disk.baseInfo.free_size<100*1024*1024)      //硬盘空闲空间小于100M时，硬盘空间不足
+            if(diskInfos[i].state!=DiskStateInfo::CAN_NOT_MOUNT)
+                isStChanged = true;
+            diskInfos[i].state = DiskStateInfo::CAN_NOT_MOUNT;
+            QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
+            LOG(WARNING,inf.toStdString().c_str());
+        }else if(diskInfos[i].baseInfo.free_size<(QReadConfig::getInstance()->getDiskCong().minFreeSize<<20))      //硬盘空闲空间小于15G时，硬盘空间不足
         {
-            disk.state = DiskStateInfo::DISK_OVER_LOAD;
+            if(diskInfos[i].state!=DiskStateInfo::DISK_OVER_LOAD)
+                isStChanged = true;
+            diskInfos[i].state = DiskStateInfo::DISK_OVER_LOAD;
+            QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
+            LOG(WARNING,inf.toStdString().c_str());
         }else if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))         //是否能打开
         {
-            cout<<"创建文件:"<<fileName.toStdString()<<"失败"<<endl;
-            disk.state = DiskStateInfo::CAN_NOT_CREATE_FILE;
+            //cout<<"创建文件:"<<fileName.toStdString()<<"失败"<<endl;
+            if(diskInfos[i].state!=DiskStateInfo::CAN_NOT_CREATE_FILE)
+                isStChanged = true;
+            diskInfos[i].state = DiskStateInfo::CAN_NOT_CREATE_FILE;
+            QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "创建文件失败";
+            LOG(WARNING,inf.toStdString().c_str());
         }else{
             QTextStream in(&file);
             in<<"this is a test file"<<"\n";
             file.close();
             QFile::remove(fileName);
-            disk.state = DiskStateInfo::DISK_NORMAL;
+            if(diskInfos[i].state!=DiskStateInfo::DISK_NORMAL)
+                isStChanged = true;
+            diskInfos[i].state = DiskStateInfo::DISK_NORMAL;
+            QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
+            LOG(INFO,inf.toStdString().c_str());
+            isAllBad = false;
         }
-        diskInfos.append(disk);
+        om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
+
+        //发送给运维
+        if(isStChanged)
+        {
+            SendDataToOM(om);
+            LOG(INFO,"发送硬盘状态信息给运维中心");
+        }
     }
+
+    //判断是否发送流媒体服务状态的信息。
+    OMData om;
+    om.uuid = uuid;
+    om.devId = uuid;
+    om.type="j9";
+
+    StreamInfoToOM t;
+    t = strToOM;
+    if(isAllBad)
+    {
+       strToOM.disksState = StreamInfoToOM::UNORMAL;
+    }else
+    {
+       strToOM.disksState = StreamInfoToOM::NORMAL;
+    }
+
+    if(strToOM.isStreamDown())
+        om.status = QString::number(0);
+    else
+        om.status=QString::number(1);
+
+    if(strToOM.isSend(t))
+    {
+        SendDataToOM(om);           //发送运维
+    }
+
     sendDiskState();        //发送硬盘状态信息
      return;
 }
@@ -515,7 +621,7 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
       if ( soap_ssl_client_context(&p, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL) )
       {
           p.soap_stream_fault(std::cerr);
-          cout<<"加载客户端证书失败。"<<endl;
+          LOG(GUZHANG,"加载客户端证书失败。");
           return 110;
       }
   #endif
@@ -531,14 +637,14 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
 
       if(SOAP_OK==p.SwitchCameraToStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&VideoStream))
       {
-          cout<<"摄像机"<<camera.cmareId.toStdString()<<"实时视频调看成功,释放请求"<<endl;
+          qInfo()<<"摄像机"<<camera.cmareId<<"实时视频调看成功,释放请求";
           ns__Response res;
           p.AbandonCameraStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&res);
-          cout<<"retcode="<<res.retcode<<" strMessage="<<res.strMessage<<endl;
+          qInfo()<<"retcode="<<res.retcode<<" strMessage="<<QString(res.strMessage.c_str());
           return 0;
       }else
       {
-          cout<<"摄像机"<<camera.cmareId.toStdString()<<"实时视频调看失败,释放请求"<<endl;
+          qCritical()<<"摄像机"<<camera.cmareId<<"实时视频调看失败,释放请求";
           p.soap_stream_fault(std::cerr);
           return 1;
       }
@@ -553,7 +659,7 @@ void StreamMonitor::hisVdReqWithTimer()
         if(relAndHisVdReqStat.hisVdReq==RelAndHisVdReqStat::UNORMAL)
         {
             //重启流媒体进程
-            cout<<"3次历史视频调看失败,重启流媒体进程"<<endl;
+            LOG(GUZHANG,"3次历史视频调看失败,重启流媒体进程");
         }
     }else
     {
@@ -563,7 +669,7 @@ void StreamMonitor::hisVdReqWithTimer()
             {
                 sendHisVdRequest(camerasInfo[i].cmareId);
                 hisReqCount++;
-                cout<<"the "<<hisReqCount<<" time to request his vd"<<endl;
+                qInfo()<<"the "<<hisReqCount<<" time to request his vd";
                 break;
             }
         }
@@ -572,13 +678,13 @@ void StreamMonitor::hisVdReqWithTimer()
 
 void StreamMonitor::monitorThreads()
 {
-    cout<<"monitorThreadsHeart"<<endl;
+    LOG(INFO,"monitorThreadsHeart");
     for(int i=0; i<threadsInfo.size(); i++)
     {
         if((time(NULL)-threadsInfo[i].heartime)>20)
         {
             QString str = threadsInfo[i].action==1? "http线程":"磁盘检测线程";
-            cout<<str.toStdString()<<" 心跳超时, 发送给流媒体处理"<<endl;
+            cout<<str.toStdString()<<" 心跳超时, 发送给流媒体处理";
             threadsInfo[i].state = ThreadStateInfo::Dead;
             sendThreadInfo(threadsInfo[i]);
         }else
@@ -589,7 +695,7 @@ void StreamMonitor::monitorThreads()
 
 void StreamMonitor::monitorDBStatus()
 {
-    cout<<"monitoring DB status"<<endl;
+    LOG(INFO,"monitoring DB status");
     dbStatusInfos.clear();
     for(int i=0; i<camerasInfo.size(); i++)
     {
@@ -620,7 +726,7 @@ void StreamMonitor::monitorDBStatus()
                      {
                           dbStaInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
                           QString querys = queryWrite.lastError().text();
-                          cout<<querys.toStdString()<<endl;
+                          cout<<querys.toStdString();
                           LOG(WARNING, (QString("插入数据失败:") + querys).toStdString().c_str());
                      }else
                      {
@@ -631,7 +737,7 @@ void StreamMonitor::monitorDBStatus()
                          {
                              dbStaInfo.DBState = DBStatusInfo::DB_TABLE_LOCKED;
                              QString querys = queryDelete.lastError().text();
-                             cout<<querys.toStdString()<<endl;
+                             cout<<querys.toStdString();
                              LOG(WARNING, (QString("删除数据失败:") + querys).toStdString().c_str());
                          }
                      }
@@ -659,7 +765,7 @@ void StreamMonitor::monitorDBStatus()
         {
             //重启流媒体进程:此处只杀死流媒体进程，进程狗功能会自动重启流媒体服务
             kill_spider_backgroud((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
-            cout<<"3次失败,重启流媒体进程"<<endl;
+            LOG(WARNING,"3次失败,重启流媒体进程");
         }
     }else
     {
@@ -726,7 +832,7 @@ void StreamMonitor::checkHisURL(QString httpUrl)
 void StreamMonitor::httpReadyRead()
 {
     QByteArray data = reply->read(100);
-    cout<<"recv his Vd Data"<<data.toHex().toStdString()<<endl;
+    qInfo()<<"recv his Vd Data"<<data.toHex();
     if(data[0]==0&&data[1]==0&&data[14]==0&&data[15]==0&&data[32]==0&&data[33]==0&&data[62]==0&&
         data[63]==0&&data[81]==0&&data[82]==0&&data[83]==0&&
         data[2]==1&&data[16]==1&&data[34]==1&&data[64]==1&&data[84]==1&&
@@ -787,9 +893,9 @@ void StreamMonitor::monitorCamera()
 {
    if( QReadConfig::getInstance()->getCameraSvrConf().bOpen)
    {
-        cout<<"monitoring DiskInfo First...."<<endl;
+        LOG(INFO,"monitoring DiskInfo First....");
         monitorDiskInfo();
-        cout<<"monitoring Camera info now"<<endl;
+        LOG(INFO,"monitoring Camera info now");
         for(int i=0; i<camerasInfo.count(); i++)
         {
             if(camerasInfo.at(i).online)
@@ -804,11 +910,15 @@ void StreamMonitor::monitorCamera()
                     if(abs(fileInfo.lastModified().toTime_t()-time(NULL))<120)  //修改时间在两分钟内
                     {
                         camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
+                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题";
+                        LOG(WARNING,inf.toStdString().c_str());
                         //有问题，通知流媒体，重启线程
                         sendRelVdRecState(camerasInfo.at(i).cmareId);
                     }else
                     {
                         camerasInfo[i].relVdSta = CameraStateInfo::NORMAL;
+                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制正常";
+                        LOG(INFO,inf.toStdString().c_str());
                     }
                 }
             }else
@@ -824,7 +934,7 @@ void StreamMonitor::printDiskInfo()
 {
     for(int i=0; i<diskInfos.size(); i++)
     {
-         cout<<"路径为"<<diskInfos[i].baseInfo.mountPath.toStdString()<<"的硬盘状态:"<<diskErrInfoMap.value(diskInfos[i].state).toStdString()<<endl;
+         qInfo()<<"路径为"<<diskInfos[i].baseInfo.mountPath<<"的硬盘状态:"<<diskErrInfoMap.value(diskInfos[i].state);
     }
 }
 
@@ -832,40 +942,40 @@ void StreamMonitor::printCameraInfo()
 {
     for(int i=0; i<camerasInfo.size(); i++)
     {
-        cout<<"*****************camera:"<<camerasInfo[i].cmareId.toStdString()<<" info***********"<<endl;
-        cout<<"在线状态:"<<(camerasInfo[i].online? "在线":"不在线")<<endl;
-        cout<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta].toStdString()<<endl;
-        cout<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath.toStdString()<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state].toStdString()<<endl;
+        qInfo()<<"*****************camera:"<<camerasInfo[i].cmareId<<" info***********";
+        qInfo()<<"在线状态:"<<(camerasInfo[i].online? "在线":"不在线");
+        qInfo()<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta];
+        qInfo()<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state];
     }
 }
 void StreamMonitor::printRelVdReqInfo()
 {
-    cout<<"*****************real Vedio request info***********"<<endl;
-    cout<<"实时视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.relVdReq].toStdString()<<endl;
+    qInfo()<<"*****************real Vedio request info***********";
+    qInfo()<<"实时视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.relVdReq];
 }
 
 void StreamMonitor::printHisVdReqInfo()
 {
-    cout<<"*****************his Vedio request info***********"<<endl;
-    cout<<"历史视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.hisVdReq].toStdString()<<endl;
+    qInfo()<<"*****************his Vedio request info***********";
+    qInfo()<<"历史视频调看状态："<<relHisVdReqErrInfoMap[relAndHisVdReqStat.hisVdReq];
 }
 
 void StreamMonitor::printDbStatusInfo()
 {
     for(int i=0; i<dbStatusInfos.size(); i++)
     {
-        cout<<"数据库"<<dbStatusInfos[i].CameraID.toStdString()<<" 状态 "<<DbStatusErrInfoMap[dbStatusInfos[i].DBState].toStdString()<<endl;
+        qInfo()<<"数据库"<<dbStatusInfos[i].CameraID<<" 状态 "<<DbStatusErrInfoMap[dbStatusInfos[i].DBState];
     }
 }
 
 void StreamMonitor::printThreadsInfo()
 {
-    cout<<"**********线程状态************"<<endl;
+    LOG(INFO,"**********线程状态************");
     for(int i=0; i<threadsInfo.size(); i++)
     {
-        cout<<"线程id:"<<threadsInfo[i].threadId.toStdString()<<" 线程类型:"
+        qInfo()<<"线程id:"<<threadsInfo[i].threadId<<" 线程类型:"
            <<(threadsInfo[i].action==1? "http线程":"磁盘检测线程")<<
-           " 状态:"<<threadErrorInfoMap[threadsInfo[i].state].toStdString()<<endl;
+           " 状态:"<<threadErrorInfoMap[threadsInfo[i].state];
     }
 }
 

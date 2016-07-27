@@ -12,14 +12,22 @@
 #include <sys/statfs.h>
 #include <sys/vfs.h>
 #include <errno.h>
+#include "NetMaster.h"
+
 //硬盘基本信息
 struct DiskBaseInfo
 {
+    DiskBaseInfo():mountPath(""),total_size(0),
+        available_size(0),free_size(0),f_blocks(0)
+      {
+
+    }
+
     QString    mountPath;       //硬盘的挂载路径
 
     qint64 total_size ;      //硬盘总大小
     qint64 available_size;                //非root用户可以用的磁盘空间大小
-    qint64 free_size;                                  //硬盘的所有剩余空间
+    qint64 free_size;                                  //硬盘的所有剩余空间 K
     qint64 f_blocks;                                //块个数
 };
 
@@ -32,6 +40,11 @@ struct DiskStateInfo{
         CAN_NOT_MOUNT,
         DISK_OVER_LOAD,
     };
+    bool operator==(const DiskStateInfo  &other) const
+    {
+        return this->baseInfo.mountPath==other.baseInfo.mountPath;
+    }
+
     DiskBaseInfo baseInfo;
     DiskState state;        //暂时只有硬盘状态，其他的信息如读写速度等，后续资源监控时添加
 };
@@ -111,6 +124,7 @@ struct CameraStateInfo
     };
     QString  cmareId;
     QString  udpAddr;           //组播地址
+    QString  uuid;              //摄像机的uuid
     bool       online;
     int          relVdSta;      //正在录制的视频信息
     HisVdFileState hisVdSta;    //历史文件信息
@@ -170,6 +184,8 @@ struct DBStatusInfo
     QString CameraID;       //数据文件对应的摄像机ID
 };
 
+
+//#############################日志信息处理数据定义begin##########################
 enum                            //日志级别
 {
     WARNING=1,
@@ -197,7 +213,9 @@ enum                            //日志级别
 
 QString getCwdPath();
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
+//#############################日志信息处理数据定义end##########################
 
+//****************************系统资源监控定义begin****************************
 #define BUF_SIZE 1024
 std::string getPidByName(char* task_name);  //根据进程名获取pid
 int kill_spider_backgroud(char* task_name); //依据进程名，杀死进程
@@ -234,5 +252,64 @@ float calculateProcCPUUse(Procstat ps1, Procstat ps2);//计算进程cpu利用率
 
 
 void getMemInfo(MemInfo &mem, char* procname="");         //获取mem信息
+//****************************系统资源监控定义end****************************
 
+
+//################全局变量定义###################
+extern bool isOMInited;     //运维中心接口是否已经初始化
+extern QString uuid;        //流媒体服务的uuid。
+bool gNetMasterReportData(const char *szStatusData);
+
+
+//******************运维中心相关数据定义**************************
+//运维中心数据结构体
+struct OMData
+{
+    OMData():action("store"),ID(9)
+    {
+
+    }
+    QString action;     //数值固定为store表示提报网管状态数据（用于存储）
+    int     ID;         //固定为9
+    QString uuid;       //流媒体服务的uuid
+    QString devId;      //被检测设备的编号：摄像机编号或者流媒体服务的uuid
+    QString type;       //故障类型:j7,j9,j14
+    QString status;     //状态数值
+    QString remark;     //备注说明
+};
+
+bool SendDataToOM(const OMData &data);      //发送数据到运维中心
+
+//是否向运行维护发送流媒体服务状态
+struct StreamInfoToOM
+{
+    enum{
+        NORMAL=1,
+        UNORMAL=2,
+    };
+    StreamInfoToOM():disksState(NORMAL),relVdState(NORMAL),hisVdState(NORMAL)
+    {
+
+    }
+    bool isSend(const StreamInfoToOM &other)
+    {
+        if(disksState!=other.disksState || relVdState!=other.relVdState || hisVdState!=other.hisVdState)
+            return true;
+        else
+            return false;
+    }
+    bool isStreamDown()
+    {
+        if(disksState==NORMAL && relVdState==NORMAL&&hisVdState==NORMAL)
+            return false;
+        else
+            return true;
+    }
+
+    int disksState;         //所有硬盘的状态，当所有硬盘都坏掉时，流媒体坏掉
+    int relVdState;         //实时视频调看结果，当3次调用都失败时，流媒体坏掉
+    int hisVdState;         //历史视频调看结果，当3次调用都失败时，流媒体坏掉
+};
+
+extern StreamInfoToOM strToOM;
 #endif // COMMON_H

@@ -3,7 +3,7 @@
 #include <QLocalServer>
 #include <QLocalSocket>
 #include <QString>
-
+#include "../common.h"
 /**
  * @brief The LocalServer class
  * 该类是与流媒体服务通信的domainsocket的服务端

@@ -50,8 +50,60 @@ HEADERS += \
     intcommon/soapPzServiceImplServiceSoapBindingProxy.h \
     intcommon/soapStub.h \
     intcommon/stdsoap2.h \
-    SysMonitor/systemresourcemonitor.h
+    SysMonitor/systemresourcemonitor.h \
+    NetMaster.h
 
 DISTFILES += \
-    config.ini \
-    config.ini.bak1
+    config.ini
+
+LIBS += -L $$PWD/lib/ -Wl,-rpath,./lib
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_acl
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_acl_cpp
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lboost_system-mt-d
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lboost_thread-mt-d
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lFrontNetMasterd
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotobuf
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotobuf-lite
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotoc
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_protocol
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet
+
+unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lstdc++
+
+INCLUDEPATH += $$PWD/../program/testFrontNet
+DEPENDPATH += $$PWD/../program/testFrontNet

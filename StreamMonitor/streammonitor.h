@@ -12,8 +12,8 @@
 
 /**
  * @brief The StreamMonitor class
- * 该类属于流媒体服务监控类，实现具体的流媒体服务逻辑监控，如CPU，内存等。
- * 此处只实现了简单的信息打印。
+ * 该类属于流媒体服务监控类，实现具体的流媒体服务逻辑监控。
+ *
  */
 class StreamMonitor : public QObject
 {
@@ -27,6 +27,7 @@ class StreamMonitor : public QObject
         Rcv_Thread_Heart=5,                  //线程心跳
         Rcv_RelVd_Res=6,                        //实时视频调看结果
         Rcv_HisVd_Res=7,                        //历史视频调看结果
+        Rcv_YUNWEI_Info=8,                      //运维中心的ip port以及uuid信息
     };
     enum SendMsgType
     {
