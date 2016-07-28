@@ -58,52 +58,53 @@ DISTFILES += \
 
 LIBS += -L $$PWD/lib/ -Wl,-rpath,./lib
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_acl
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -l_acl
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_acl_cpp
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -l_acl_cpp
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lboost_system-mt-d
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lboost_system-mt-d
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lboost_thread-mt-d
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lboost_thread-mt-d
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lFrontNetMasterd
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMasterd
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotobuf
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lprotobuf
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotobuf-lite
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lprotobuf-lite
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lprotoc
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lprotoc
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -l_protocol
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -l_protocol
 
-unix:!macx: LIBS += -L$$PWD/../program/testFrontNet/lib/ -lstdc++
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
 
-INCLUDEPATH += $$PWD/../program/testFrontNet
-DEPENDPATH += $$PWD/../program/testFrontNet
+unix:!macx: LIBS += -L$$PWD/lib/ -lstdc++
+
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
