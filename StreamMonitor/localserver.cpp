@@ -14,7 +14,13 @@ void LocalServer::setServName(QString servName)
     m_servName = servName;
     QFile file(m_servName);
     if(file.exists())
-        file.remove();
+    {
+        qInfo()<<"文件"<<m_servName<<"已存在，删除";
+        if(file.remove())
+            qInfo()<<"删除成功";
+        else
+            qInfo()<<"删除失败";
+    }
 }
 
 bool LocalServer::listen()

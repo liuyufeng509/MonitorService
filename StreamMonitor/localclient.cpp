@@ -4,15 +4,13 @@ using namespace std;
 LocalClient* LocalClient::m_pInstance = NULL;
 LocalClient::LocalClient():socket(NULL)
 {
-//    socket = new QLocalSocket;
-//    connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
-//            this, SLOT(displayError(QLocalSocket::LocalSocketError)));
-//    connect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
+    timer = new QTimer;
+    connect(timer, SIGNAL(timeout()), this, SLOT(requestConnection()));
 }
 
 void LocalClient::disConnected()
 {
-    LOG(WARNING,"connection disconnected");
+    qWarning()<<"connection disconnected";
     disconnect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
             this, SLOT(displayError(QLocalSocket::LocalSocketError)));
     disconnect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
@@ -29,6 +27,7 @@ void LocalClient::requestConnection()
         connect(socket, SIGNAL(error(QLocalSocket::LocalSocketError)),
                 this, SLOT(displayError(QLocalSocket::LocalSocketError)));
         connect(socket, SIGNAL(disconnected()), this, SLOT(disConnected()));
+        timer->stop();
     }
     socket->connectToServer(m_servName);
     if(socket->state()==QLocalSocket::ConnectedState)
@@ -38,6 +37,9 @@ void LocalClient::requestConnection()
     }else
     {
         qWarning()<<"new connection to  server "<<m_servName<<" fail";
+        socket->deleteLater();
+        socket = NULL;
+        timer->start(5000);
     }
 }
 

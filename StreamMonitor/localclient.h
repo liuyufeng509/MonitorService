@@ -4,7 +4,8 @@
 #include <QObject>
 #include <QLocalSocket>
 #include <QString>
-#include "../common.h"
+#include <QTimer>
+//#include "../common.h"
 class LocalClient : public QObject
 {
     Q_OBJECT
@@ -27,7 +28,6 @@ public:
     bool isConnect(){return isConnected;}
 
     ~LocalClient();
-    void  requestConnection();
     void  writeData(QByteArray data);
 
 private:
@@ -37,6 +37,7 @@ signals:
 public slots:
     void displayError(QLocalSocket::LocalSocketError socketError);
     void disConnected();
+    void  requestConnection();
 
 private:
     static LocalClient *m_pInstance;        //单例模式
@@ -45,6 +46,7 @@ private:
 
     QLocalSocket *socket;
     QString      m_servName;
+    QTimer       *timer;            //当链接失败后，定时链接之
 };
 
 #endif // LOCALCLIENT_H
