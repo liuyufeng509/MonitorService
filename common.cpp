@@ -300,6 +300,7 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
 {
     FILE* fp;
     char buf[100];
+    memset(buf, 0, sizeof(buf));
     char name[20];
     long memTotalSize;
     long memFreeSize;
@@ -326,10 +327,6 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
     }else
     {
         FILE* fpProc;
-        char buf[100];
-        char name[20];
-        long memTotalSize;
-
         //processID int to string
         string str= getPidByName(procname);
         string fileName = "/proc/"+str+"/status";
@@ -345,11 +342,11 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
         //读取进程内存信息，在第16行
         for(int i = 0; i < 16; i++)
         {
-            fgets(buf,sizeof(buf),fp);
+            fgets(buf,sizeof(buf),fpProc);
         }
         sscanf(buf,"%s%ld",name,&memTotalSize);
         mem.procResTotalMem = memTotalSize;
-        fgets(buf,sizeof(buf),fp);
+        fgets(buf,sizeof(buf),fpProc);
         sscanf(buf,"%s%ld",name,&memTotalSize);
         mem.procVRTTotalMem = memTotalSize;
 
