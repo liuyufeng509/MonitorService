@@ -123,7 +123,8 @@ void StreamMonitor::doParseXml(QString xml)
                     if(!camerasInfo.contains(camInfo))
                     {
                         camerasInfo.append(camInfo);
-                    }
+                    }else
+                        camerasInfo[camerasInfo.indexOf(camInfo)] = camInfo;
                 }
                     break;
                 case 3:            //del
