@@ -255,7 +255,7 @@ void StreamMonitor::doParseXml(QString xml)
             }
         }
             break;
-        case Rcv_RelVd_Res:
+        case Rcv_RelVd_Res:     //改用gsoap调用，所以该case分支不再使用，代码暂且保留。
         {
             qInfo()<<" Rel Vedeo Res Parse";
             //<Equipment>
@@ -273,7 +273,7 @@ void StreamMonitor::doParseXml(QString xml)
             break;
         case Rcv_HisVd_Res:
         {
-            qInfo()<<" Rel Vedeo Res Parse";
+            qInfo()<<"接收到历史视频调看请求的回应";
             //<Equipment>
             QDomNodeList equipments = message.elementsByTagName("Equipment");
             int nCount = equipments.count();
@@ -403,9 +403,11 @@ void StreamMonitor::monitorDiskInfo()
         bool isStChanged = false;       //状态变化了才上报
         QFileInfo fileInfo(diskInfos[i].baseInfo.mountPath);
         QString fileName = diskInfos[i].baseInfo.mountPath[diskInfos[i].baseInfo.mountPath.length()-1]=='/'? diskInfos[i].baseInfo.mountPath+"test":diskInfos[i].baseInfo.mountPath+"/test";
+
         QFile file(fileName);
         getDiskInfo((char*)diskInfos[i].baseInfo.mountPath.toStdString().c_str(), diskInfos[i]);
 
+        qInfo()<<"filename:"<<fileName<<" mountpath:"<<diskInfos[i].baseInfo.mountPath;
         OMData om;
         om.uuid = uuid;
         om.devId = uuid;
@@ -431,7 +433,7 @@ void StreamMonitor::monitorDiskInfo()
             if(diskInfos[i].state!=DiskStateInfo::CAN_NOT_CREATE_FILE)
                 isStChanged = true;
             diskInfos[i].state = DiskStateInfo::CAN_NOT_CREATE_FILE;
-            QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "创建文件失败";
+            QString inf = "磁盘："+ fileName + " 创建文件失败";
             LOG(WARNING,inf.toStdString().c_str());
         }else{
             QTextStream in(&file);
@@ -479,7 +481,9 @@ void StreamMonitor::monitorDiskInfo()
     if(strToOM.isSend(t))
     {
         SendDataToOM(om);           //发送运维
-    }
+        qInfo()<<"流媒体服务状态在线状态发生变化，上传运维中心";
+    }else
+        qInfo()<<"流媒体服务状态在线状态未发生变化，不需上传运维中心";
 
     sendDiskState();        //发送硬盘状态信息
      return;
@@ -661,7 +665,8 @@ void StreamMonitor::hisVdReqWithTimer()
         {
             //重启流媒体进程
             LOG(GUZHANG,"3次历史视频调看失败,重启流媒体进程");
-        }
+        }else
+            qInfo()<<"第三次请求历史视频成功";
     }else
     {
         for(int i=0; i<camerasInfo.size(); i++)
@@ -823,6 +828,7 @@ void StreamMonitor::checkHisURL(QString httpUrl)
     qheader.setRawHeader("Range",Range.toLatin1());
 
     reply = manager->get(QNetworkRequest(qheader));
+    qInfo()<<"下载历史视频流的前86字节";
 
     //关联下载完成后的信号和槽
     connect(reply,SIGNAL(finished()),this,SLOT(httpFinished()));
@@ -834,7 +840,7 @@ void StreamMonitor::checkHisURL(QString httpUrl)
 void StreamMonitor::httpReadyRead()
 {
     QByteArray data = reply->read(100);
-    qInfo()<<"recv his Vd Data"<<data.toHex();
+    qInfo()<<"收到历史视频流数据："<<data.toHex();
     if(data[0]==0&&data[1]==0&&data[14]==0&&data[15]==0&&data[32]==0&&data[33]==0&&data[62]==0&&
         data[63]==0&&data[81]==0&&data[82]==0&&data[83]==0&&
         data[2]==1&&data[16]==1&&data[34]==1&&data[64]==1&&data[84]==1&&
@@ -843,24 +849,33 @@ void StreamMonitor::httpReadyRead()
         relAndHisVdReqStat.hisVdReq = RelAndHisVdReqStat::NORMAL;
         hisReqCount=0;
         hisRqTimer->stop();
+        qInfo()<<"请求历史视频成功";
     }else
     {
         relAndHisVdReqStat.hisVdReq = RelAndHisVdReqStat::UNORMAL;
         if(hisReqCount==0)
+        {
             hisRqTimer->start(2000);
-        else
+            qInfo()<<"请求历史视频失败，开启计时器，重复请求";
+        }else
+            {
             hisReqCount++;
+            qInfo()<<"第"<<hisReqCount<<"次请求历史视频";
+        }
+
     }
 }
 
 void StreamMonitor::httpFinished()
 {
+    qInfo()<<"接收历史视频流结束";
     reply->deleteLater();
 }
 
  void StreamMonitor::monitorRelAndHisVdReq()
   {
       //1.实时视频调看，通过gsoap接口调看
+     qInfo()<<"实时视频调看监控开始";
      if(relReqCount==0)                       //判断如果count不为0，说明正在用定时器重复请求中，此次不请求
      {
          for(int i=0; i<camerasInfo.size(); i++)
@@ -870,9 +885,13 @@ void StreamMonitor::httpFinished()
                  relAndHisVdReqStat.relVdReq = monitorRelVdWithGsoap(camerasInfo[i]);
                  if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
                  {
+                    qWarning()<<"调看摄像机："<<camerasInfo[i].cmareId<<"实时视频失败,启动定时器，请求三次";
                     relRqTimer->start(2000);
                  }else
+                 {
+                     qWarning()<<"调看摄像机："<<camerasInfo[i].cmareId<<"实时视频成功";
                      relReqCount=0;
+                 }
                  break;
              }
          }
@@ -880,10 +899,12 @@ void StreamMonitor::httpFinished()
 
      //2.历史视频调看
      //发送历史视频调看请求
+     qInfo()<<"发送历史视频调看请求，开始历史视频调看状态监控";
      for(int i=0; i<camerasInfo.size(); i++)
      {
          if(camerasInfo[i].online)
          {
+            qInfo()<<"请求摄像机"<<camerasInfo[i].cmareId<<"的历史视频";
             sendHisVdRequest(camerasInfo[i].cmareId);
             break;
          }
@@ -912,7 +933,7 @@ void StreamMonitor::monitorCamera()
                     if(abs(fileInfo.lastModified().toTime_t()-time(NULL))<120)  //修改时间在两分钟内
                     {
                         camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
-                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题";
+                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题,通知流媒体重启线程";
                         LOG(WARNING,inf.toStdString().c_str());
                         //有问题，通知流媒体，重启线程
                         sendRelVdRecState(camerasInfo.at(i).cmareId);
@@ -922,10 +943,15 @@ void StreamMonitor::monitorCamera()
                         QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制正常";
                         LOG(INFO,inf.toStdString().c_str());
                     }
+                }else
+                {
+                    qWarning()<<"未找到摄像机 "<<camerasInfo[i].cmareId<<" 当前正在录制的文件名";
                 }
             }else
             {
                  camerasInfo[i].relVdSta = CameraStateInfo::NOT_ONLINE;
+                 QString inf = "摄像机："+camerasInfo[i].cmareId +"不在线";
+                 LOG(INFO,inf.toStdString().c_str());
             }
         }
    }
