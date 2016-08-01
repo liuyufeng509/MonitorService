@@ -753,6 +753,7 @@ void StreamMonitor::monitorDBStatus()
     }
 
        //send to stream
+    if(dbStatusInfos.size()>0)
        sendDbStatus();
 }
 

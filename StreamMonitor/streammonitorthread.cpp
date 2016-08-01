@@ -35,9 +35,9 @@ void StreamMonitorThread::run()
 //    relAndHisVdReqTimer->start(QReadConfig::getInstance()->getRelAndHisVidConf().timer);
 
     //数据库状态监视
-//    dbMonitorTimer = new QTimer;
-//    connect(dbMonitorTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorDBStatus()));
-//    dbMonitorTimer->start(QReadConfig::getInstance()->getDBSvrConf().timer);
+    dbMonitorTimer = new QTimer;
+    connect(dbMonitorTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorDBStatus()));
+    dbMonitorTimer->start(QReadConfig::getInstance()->getDBSvrConf().timer);
 
     //定时检测线程心跳
 //    threadHeartTimer = new QTimer;

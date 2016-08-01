@@ -52,7 +52,10 @@ void LocalClient::writeData(QByteArray data)
         qInfo()<<"发送数据："<<QString(data)<<endl;
     }else
     {
-        qWarning()<<"LocalClient writeData err"<<socket->errorString()<<"请求连接";
+        if(socket!=NULL)
+            qWarning()<<"LocalClient writeData err"<<socket->errorString()<<"请求连接";
+        else
+            qWarning()<<"Socket is NULL";
         requestConnection();
     }
 }
