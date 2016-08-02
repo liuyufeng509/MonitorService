@@ -89,7 +89,7 @@ std::string getPidByName(char* task_name)
     struct dirent *ptr;
     char pidstr[256];
     FILE *fp;
-    char filepath[50];//大小随意，能装下cmdline文件的路径即可
+    char filepath[255];//大小随意，能装下cmdline文件的路径即可
     char cur_task_name[50];//大小随意，能装下要识别的命令行文本即可
     char buf[BUF_SIZE];
     dir = opendir("/proc"); //打开路径
@@ -105,6 +105,7 @@ std::string getPidByName(char* task_name)
 
             sprintf(filepath, "/proc/%s/status", ptr->d_name);//生成要读取的文件的路径
             fp = fopen(filepath, "r");//打开文件
+            qInfo()<<"打开进程文件:"<<filepath;
             if (NULL != fp)
             {
                 if( fgets(buf, BUF_SIZE-1, fp)== NULL ){
@@ -112,12 +113,13 @@ std::string getPidByName(char* task_name)
                     continue;
                 }
                 sscanf(buf, "%*s %s", cur_task_name);
-
+                qInfo()<<"cur_task_name:"<<cur_task_name;
                 //如果文件内容满足要求则打印路径的名字（即进程的PID）
                 if (!strcmp(task_name, cur_task_name))
                 {
                     printf("PID:  %s\n", ptr->d_name);
                     strcpy(pidstr, ptr->d_name);
+                    qInfo()<<"pid:"<<pidstr<<" name:"<<task_name;
                 }
 
                 fclose(fp);
