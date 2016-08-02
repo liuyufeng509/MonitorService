@@ -309,7 +309,7 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
     {
         perror("fopen:");
         LOG(WARNING, "打不开系统内存文件");
-        exit (0);
+      //  exit (0);
     }
 
     fgets(buf,sizeof(buf),fp);
@@ -351,7 +351,7 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
         mem.procVRTTotalMem = memTotalSize;
 
         mem.occpy = (float)mem.procResTotalMem/(float)mem.totalMem*100;
-
+        fclose(fpProc);
     }
 }
 
