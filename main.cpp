@@ -40,11 +40,14 @@ void init_daemon()
 }
 int main(int argc, char *argv[])
 {
-   // init_daemon();
+    //init_daemon();
     QCoreApplication a(argc, argv);
 
     //读取配置文件
-    QReadConfig::getInstance()->readConfigFile("/home/liuyufeng/MonitorService/config.ini");
+    QString path = getCwdPath()+"config.ini";
+    cout<<path.toStdString().c_str()<<endl;
+    QReadConfig::getInstance()->readConfigFile(path);
+
     QReadConfig::getInstance()->printInfo();
 
     qInstallMessageHandler(outputMessage);

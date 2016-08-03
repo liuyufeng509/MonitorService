@@ -79,7 +79,6 @@ void LocalServer::readFortune()
 
     int rcvSize = dataRcv.size();
 
-    int num = 0;
     if(datagram.size()==1)
     {
         datagram.append(dataRcv.mid(0, 3));          //接收上次接收的剩下的半截帧
@@ -88,6 +87,7 @@ void LocalServer::readFortune()
         totalSize |= ((datagram[2] << 16) & 0x00FF0000);
         totalSize |= ((datagram[3] << 24) & 0xFF000000);
         datagram.append(dataRcv.mid(3, totalSize));          //接收上次接收的剩下的半截帧
+       // qInfo()<<"size=1:"<<QString(datagram);
     }else if(datagram.size()==2)
     {
         datagram.append(dataRcv.mid(0, 2));          //接收上次接收的剩下的半截帧
@@ -96,6 +96,7 @@ void LocalServer::readFortune()
         totalSize |= ((datagram[2] << 16) & 0x00FF0000);
         totalSize |= ((datagram[3] << 24) & 0xFF000000);
         datagram.append(dataRcv.mid(2, totalSize));          //接收上次接收的剩下的半截帧
+        //qInfo()<<"size=2:"<<QString(datagram);
     }else if(datagram.size()==3)
     {
         datagram.append(dataRcv.mid(0, 1));          //接收上次接收的剩下的半截帧
@@ -104,8 +105,12 @@ void LocalServer::readFortune()
         totalSize |= ((datagram[2] << 16) & 0x00FF0000);
         totalSize |= ((datagram[3] << 24) & 0xFF000000);
         datagram.append(dataRcv.mid(1, totalSize));          //接收上次接收的剩下的半截帧
+        //qInfo()<<"size=3:"<<QString(datagram);
     }else
+    {
          datagram.append(dataRcv.mid(0, rcvBytes));          //接收上次接收的剩下的半截帧
+         //qInfo()<<"size="<<datagram.size()<<" :"<<QString(datagram);
+    }
     if(datagram.size()>0)
     {
         qInfo()<<"完整报文内容："<<QString(datagram)<<endl;
@@ -121,18 +126,22 @@ void LocalServer::readFortune()
             {
                 datagram.clear();
                 datagram.append(dataRcv[rcvBytes]);
+                qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
                 break;
+
             }
             if(rcvBytes==rcvSize-2)             //下一帧只有2个字节,
             {
                 datagram.clear();
                 datagram.append(dataRcv[rcvBytes]);
+                qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
                 break;
             }
             if(rcvBytes==rcvSize-2)             //下一帧只有3个字节,
             {
                 datagram.clear();
                 datagram.append(dataRcv[rcvBytes]);
+                qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
                 break;
             }
 
@@ -141,12 +150,15 @@ void LocalServer::readFortune()
              totalSize |= ((dataRcv[2+rcvBytes] << 16) & 0x00FF0000);
              totalSize |= ((dataRcv[3+rcvBytes] << 24) & 0xFF000000);
              qInfo()<<"完整报文内容："<<QString(dataRcv.mid(4+rcvBytes, totalSize))<<endl;
+
              emit emitData(QString(dataRcv.mid(4+rcvBytes, totalSize)));
              rcvBytes += totalSize +4;
+             qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
          }
         if(rcvBytes==rcvSize)       //刚好接收完
         {
             rcvBytes = 0;
+            qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
             break;
         }
         if(rcvBytes>rcvSize)        //说明还有下一个消息
@@ -154,34 +166,12 @@ void LocalServer::readFortune()
             datagram.clear();
             datagram.append(dataRcv.mid(rcvBytes-totalSize-4));         //把最后一帧的半截放到datagram中，下次接收，先把剩下的放到datagram中，凑成完整报文
             rcvBytes = rcvBytes-rcvSize;
+            qInfo()<<"rcvBytes="<<rcvBytes<<" rcvSize="<<rcvSize;
             break;
         }
     }
 
-
-//    datagram.append(dataRcv);       //收到就放到数据报文中
-
-//    if(dataRcv[4]=='<'&&dataRcv[5]=='?')    //如果是报文第一帧，取总长度
-//    {
-//        totalSize = dataRcv[0] & 0x000000FF;
-//        totalSize |= ((dataRcv[1] << 8) & 0x0000FF00);
-//        totalSize |= ((dataRcv[2] << 16) & 0x00FF0000);
-//        totalSize |= ((dataRcv[3] << 24) & 0xFF000000);
-//        //size 单指字符串的长度
-//        rcvBytes = dataRcv.size()-4;       //收到的为总长度-4个字节
-//    }else{
-//        rcvBytes += dataRcv.size();         //如果不是，拼包
-//    }
-//    if(rcvBytes==totalSize)             //全部接收完毕
-//    {
-//        QByteArray tmpArr = datagram.mid(4);
-//        QString data(tmpArr);
-//        emit emitData(data);       //分发消息
-//        totalSize=0;
-//        rcvBytes=0;
-//        qInfo()<<"完整报文内容："<<QString(tmpArr)<<endl;
-//        datagram.clear();
-//    }
+    qInfo()<<"rcv data end";
 }
 
 void LocalServer::displayError(QLocalSocket::LocalSocketError socketError)

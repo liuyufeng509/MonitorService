@@ -105,7 +105,7 @@ std::string getPidByName(char* task_name)
 
             sprintf(filepath, "/proc/%s/status", ptr->d_name);//生成要读取的文件的路径
             fp = fopen(filepath, "r");//打开文件
-            qInfo()<<"打开进程文件:"<<filepath;
+
             if (NULL != fp)
             {
                 if( fgets(buf, BUF_SIZE-1, fp)== NULL ){
@@ -113,7 +113,6 @@ std::string getPidByName(char* task_name)
                     continue;
                 }
                 sscanf(buf, "%*s %s", cur_task_name);
-                qInfo()<<"cur_task_name:"<<cur_task_name;
                 //如果文件内容满足要求则打印路径的名字（即进程的PID）
                 if (!strcmp(task_name, cur_task_name))
                 {
@@ -235,6 +234,9 @@ void getProcCpuStats(Procstat & ps, int processID)
     fgets(buf,sizeof(buf),fp);
 
     sscanf(buf,"%ld%s%s%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld%ld",&pid,comm,task_state,&ppid,&pgid,&sid,&tty_nr,&tty_pgrp,&task_flags,&min_flt,&cmin_flt,&maj_flt,&cmaj_flt,&ps.utime,&ps.stime,&ps.cutime,&ps.cstime);
+
+    fclose(fp);
+
 }
 void getCPUStatus(Procstat& ps) {
      // Get "/proc/stat" info.
