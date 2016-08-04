@@ -141,153 +141,153 @@ void StreamMonitor::doParseXml(QString xml)
             }
         }
             break;
-//        case Rcv_Camera_Online:
-//        {
-//            qInfo()<<" Cameras online Parse";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-//                QDomElement status = equipment.lastChildElement();          //<STATUS>
+        case Rcv_Camera_Online:
+        {
+            qInfo()<<" Cameras online Parse";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement status = equipment.lastChildElement();          //<STATUS>
 
-//                CameraStateInfo camInfo;
-//                camInfo.cmareId = cameraId.text();
-//                camInfo.online = status.text().toInt()==0? true:false;
-//                if(camerasInfo.contains(camInfo))
-//                {
-//                    camerasInfo[camerasInfo.indexOf(camInfo)].online=camInfo.online;
-//                }else
-//                    camerasInfo.append(camInfo);
-//                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
-//                //来一条在线状态就要转发给运维
-//                OMData om;
-//                om.uuid = uuid;
-//                om.devId= camInfo.uuid;
-//                om.type="j7";
-//                om.status=camInfo.online;
-//                SendDataToOM(om);
-//            }
-//        }
-//            break;
-//        case RcV_Threads_Info:
-//        {
-//            qInfo()<<" threads list Parse";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement threadId = equipment.firstChildElement("THRID"); //<THRID>
-//                QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
-//                QDomElement optType = equipment.lastChildElement("OPTTYPE");         //<OPTTYPE>
-//                ThreadStateInfo threadInfo;
-//                threadInfo.threadId = threadId.text();
-//                threadInfo.action = action.text().toInt();
-//                if(!threadsInfo.contains(threadInfo))
-//                {
-//                    if(optType.text().toInt()==1)
-//                        threadsInfo.append(threadInfo);
-//                }else
-//                {
-//                    if(optType.text().toInt()==2)           //1 add  2 delete
-//                        threadsInfo.removeOne(threadInfo);
-//                    else
-//                        threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
-//                }
-//                qInfo()<<"threadId="<<threadId.text()<<" action="<<action.text().toInt();
-//            }
-//        }
-//            break;
-//        case Rcv_HisFile_Info:
-//        {
-//            qInfo()<<" HisFile Info Parse";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-//                QDomElement filepath = equipment.lastChildElement();          //<FILE>
-//                CameraStateInfo camInfo;
-//                camInfo.cmareId=cameraId.text();
-//                camInfo.hisVdSta.hisVdPath=filepath.text();
-//                if(camerasInfo.contains(camInfo))
-//                {
-//                    camerasInfo[camerasInfo.indexOf(camInfo)].hisVdSta.hisVdPath = camInfo.hisVdSta.hisVdPath;
-//                }else
-//                    camerasInfo.append(camInfo);
+                CameraStateInfo camInfo;
+                camInfo.cmareId = cameraId.text();
+                camInfo.online = status.text().toInt()==0? true:false;
+                if(camerasInfo.contains(camInfo))
+                {
+                    camerasInfo[camerasInfo.indexOf(camInfo)].online=camInfo.online;
+                }else
+                    camerasInfo.append(camInfo);
+                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
+                //来一条在线状态就要转发给运维
+                OMData om;
+                om.uuid = uuid;
+                om.devId= camInfo.uuid;
+                om.type="j7";
+                om.status=camInfo.online;
+                SendDataToOM(om);
+            }
+        }
+            break;
+        case RcV_Threads_Info:
+        {
+            qInfo()<<" threads list Parse";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement threadId = equipment.firstChildElement("THRID"); //<THRID>
+                QDomElement action = equipment.lastChildElement("ACTION");          //<ACTION>
+                QDomElement optType = equipment.lastChildElement("OPTTYPE");         //<OPTTYPE>
+                ThreadStateInfo threadInfo;
+                threadInfo.threadId = threadId.text();
+                threadInfo.action = action.text().toInt();
+                if(!threadsInfo.contains(threadInfo))
+                {
+                    if(optType.text().toInt()==1)
+                        threadsInfo.append(threadInfo);
+                }else
+                {
+                    if(optType.text().toInt()==2)           //1 add  2 delete
+                        threadsInfo.removeOne(threadInfo);
+                    else
+                        threadsInfo[threadsInfo.indexOf(threadInfo)].action = threadInfo.action;
+                }
+                qInfo()<<"threadId="<<threadId.text()<<" action="<<action.text().toInt();
+            }
+        }
+            break;
+        case Rcv_HisFile_Info:
+        {
+            qInfo()<<" HisFile Info Parse";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement filepath = equipment.lastChildElement();          //<FILE>
+                CameraStateInfo camInfo;
+                camInfo.cmareId=cameraId.text();
+                camInfo.hisVdSta.hisVdPath=filepath.text();
+                if(camerasInfo.contains(camInfo))
+                {
+                    camerasInfo[camerasInfo.indexOf(camInfo)].hisVdSta.hisVdPath = camInfo.hisVdSta.hisVdPath;
+                }else
+                    camerasInfo.append(camInfo);
 
-//                //check the history file
-//                checkHisFile(camerasInfo[camerasInfo.indexOf(camInfo)]);
-//                qInfo()<<"cameraId="<<cameraId.text()
-//                   <<" filepath="<<filepath.text();
-//            }
-//        }
-//            break;
-//        case Rcv_Thread_Heart:
-//        {
-//            qInfo()<<" Thread Heart Parse";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement threadId = equipment.firstChildElement(); //<THRID>
-//                qInfo()<<"threadId="<<threadId.text();
-//                for(int j=0; j<threadsInfo.size(); j++)
-//                {
-//                    if(threadsInfo[j].threadId == threadId.text())
-//                    {
-//                        threadsInfo[j].heartime = time(NULL);
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//            break;
-//        case Rcv_RelVd_Res:     //改用gsoap调用，所以该case分支不再使用，代码暂且保留。
-//        {
-//            qInfo()<<" Rel Vedeo Res Parse";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-//                QDomElement status = equipment.lastChildElement();          //<Status>
-//                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
-//            }
-//        }
-//            break;
-//        case Rcv_HisVd_Res:
-//        {
-//            qInfo()<<"接收到历史视频调看请求的回应";
-//            //<Equipment>
-//            QDomNodeList equipments = message.elementsByTagName("Equipment");
-//            int nCount = equipments.count();
-//            for(int i=0; i<nCount; i++)
-//            {
-//                QDomNode eqNode = equipments.item(i);
-//                QDomElement equipment = eqNode.toElement();         //<EquipMent>
-//                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
-//                QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
-//                qInfo()<<"cameraId="<<cameraId.text()<<" httpurl(0 normal)="<<httpurl.text().toInt();
-//                checkHisURL(httpurl.text());
-//            }
-//        }
-//            break;
+                //check the history file
+                checkHisFile(camerasInfo[camerasInfo.indexOf(camInfo)]);
+                qInfo()<<"cameraId="<<cameraId.text()
+                   <<" filepath="<<filepath.text();
+            }
+        }
+            break;
+        case Rcv_Thread_Heart:
+        {
+            qInfo()<<" Thread Heart Parse";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement threadId = equipment.firstChildElement(); //<THRID>
+                qInfo()<<"threadId="<<threadId.text();
+                for(int j=0; j<threadsInfo.size(); j++)
+                {
+                    if(threadsInfo[j].threadId == threadId.text())
+                    {
+                        threadsInfo[j].heartime = time(NULL);
+                        break;
+                    }
+                }
+            }
+        }
+            break;
+        case Rcv_RelVd_Res:     //改用gsoap调用，所以该case分支不再使用，代码暂且保留。
+        {
+            qInfo()<<" Rel Vedeo Res Parse";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement status = equipment.lastChildElement();          //<Status>
+                qInfo()<<"cameraId="<<cameraId.text()<<" status(0 normal)="<<status.text().toInt();
+            }
+        }
+            break;
+        case Rcv_HisVd_Res:
+        {
+            qInfo()<<"接收到历史视频调看请求的回应";
+            //<Equipment>
+            QDomNodeList equipments = message.elementsByTagName("Equipment");
+            int nCount = equipments.count();
+            for(int i=0; i<nCount; i++)
+            {
+                QDomNode eqNode = equipments.item(i);
+                QDomElement equipment = eqNode.toElement();         //<EquipMent>
+                QDomElement cameraId = equipment.firstChildElement(); //<CAMID>
+                QDomElement httpurl = equipment.lastChildElement();          //<Httpurl>
+                qInfo()<<"cameraId="<<cameraId.text()<<" httpurl(0 normal)="<<httpurl.text().toInt();
+                checkHisURL(httpurl.text());
+            }
+        }
+            break;
         case Rcv_YUNWEI_Info:
         {
             QDomElement uuidEl = message.firstChildElement("UUID");           //<UUID>
@@ -313,6 +313,17 @@ void StreamMonitor::doParseXml(QString xml)
                         LOG(INFO, ">>>>>> [NetMasterInit] is Fail! <<<<<<" );
                         isOMInited = false;
                     }
+                }
+            }else
+            {
+                if(!NetMasterInit(addr.text().toStdString().c_str(), uuidEl.text().toStdString().c_str()))
+                {
+                    LOG(INFO, ">>>>>> [NetMasterInit] is Success. <<<<<<");
+                    isOMInited = true;
+                }else
+                {
+                    LOG(INFO, ">>>>>> [NetMasterInit] is Fail! <<<<<<" );
+                    isOMInited = false;
                 }
             }
         }
