@@ -677,20 +677,38 @@ void SystemResourceMonitor::KillAndStartProcess(char* processName)
     string str1 = /*"gnome-terminal -e "+*/str;
     char* fileName = NULL;
     fileName = (char*)str1.data();
-    //cout<<fileName<<endl;
-    system(fileName);
+    if(isDebug)
+        cout<<fileName<<endl;
+    signal(SIGCHLD, SIG_IGN);
+    if(fork()==0)
+    {
+        if( execl( fileName, "StreamPro",NULL, NULL ) == -1 )
+        {
+          qWarning()<<"进程:"<<fileName<<" 启动失败";
+        }
+    }
+    //system(fileName);
     LOG(INFO, ("KillAndStartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 
 void SystemResourceMonitor::StartProcess()
 {
+
     string str = QReadConfig::getInstance()->getProcDogConf().strPath.toStdString();
 
-    string str1 = /*"gnome-terminal -e "+*/str;
-    cout<<str1<<endl;
+    string str1 = /*"gnome-terminal -e "+*/str;   //后台运行
+    if(isDebug)
+        cout<<str1<<endl;
     char* fileName = NULL;
     fileName = (char*)str1.data();
-    system(fileName);
+    signal(SIGCHLD, SIG_IGN);
+    if(fork()==0)
+    {
+        if( execl( fileName, "StreamPro",NULL, NULL ) == -1 )
+        {
+          qWarning()<<"进程:"<<fileName<<" 启动失败";
+        }
+    }
     LOG(INFO, ("StartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 

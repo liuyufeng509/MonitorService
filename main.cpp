@@ -14,6 +14,8 @@
 #include<sys/stat.h>
 #include<time.h>
 
+bool isDebug = false;
+
 void init_daemon()
 {
     int pid;
@@ -40,17 +42,26 @@ void init_daemon()
 }
 int main(int argc, char *argv[])
 {
-    //init_daemon();
+    init_daemon();
     QCoreApplication a(argc, argv);
 
+    qInstallMessageHandler(outputMessage);
+
+    if(argc == 2)
+    {
+        if(strcmp(argv[1], "-d")==0)
+            {
+            isDebug = true;
+            cout<<"isDebug:"<<isDebug<<endl;
+        }
+    }
     //读取配置文件
     QString path = getCwdPath()+"config.ini";
-    cout<<path.toStdString().c_str()<<endl;
     QReadConfig::getInstance()->readConfigFile(path);
 
-    QReadConfig::getInstance()->printInfo();
+    qInfo()<<"读取配置文件："<<path<<endl;
 
-    qInstallMessageHandler(outputMessage);
+    QReadConfig::getInstance()->printInfo();
 
     LOG(WARNING, "Start MonitorService");
 
@@ -65,8 +76,12 @@ int main(int argc, char *argv[])
 
 
     //命令行处理类
-    CommandLine::getInstance()->printHelp();
-    CommandLine::getInstance()->run();
+    if(isDebug)
+        {
+        CommandLine::getInstance()->printHelp();
+        CommandLine::getInstance()->run();
+    }
+
 
 //    qApp->quit();
 //    QProcess::startDetached(qApp->applicationFilePath(), QStringList());  重启本身

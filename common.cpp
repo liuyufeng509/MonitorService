@@ -20,8 +20,8 @@ QString getCwdPath()
     int cnt = readlink("/proc/self/exe", current_absolute_path, MAX_SIZE);
     if (cnt < 0 || cnt >= MAX_SIZE)
     {
-        printf("***Error***\n");
-        exit(-1);
+        qCritical()<<"***Error***\n";
+        //exit(-1);
     }
 
     int i;
@@ -69,7 +69,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     QString path = getCwdPath();
     QFile file(path+"log.txt");
     QFileInfo fileInfo(file);
-    if(fileInfo.size()>(QReadConfig::getInstance()->getLogInfo().size<<20))
+    if(fileInfo.size()>(/*QReadConfig::getInstance()->getLogInfo().size*/10<<20))
     {
         QFile::remove(file.fileName());
     }else
@@ -116,7 +116,8 @@ std::string getPidByName(char* task_name)
                 //如果文件内容满足要求则打印路径的名字（即进程的PID）
                 if (!strcmp(task_name, cur_task_name))
                 {
-                    printf("PID:  %s\n", ptr->d_name);
+                    if(isDebug)
+                        printf("PID:  %s\n", ptr->d_name);
                     strcpy(pidstr, ptr->d_name);
                     qInfo()<<"pid:"<<pidstr<<" name:"<<task_name;
                 }
@@ -164,21 +165,29 @@ int getDiskInfo(char *path, DiskStateInfo &diskInfo)
     diskInfo.baseInfo.mountPath = QString(path);
 
     //输出每个块的长度，linux下内存块为4KB
-    printf("block size: %ld bytes\n", disk_info.f_bsize);
+    //printf("block size: %ld bytes\n", disk_info.f_bsize);
+    qInfo()<<"block size: "<<disk_info.f_bsize<<" bytes";
     //输出块个数
-    printf("total data blocks: %ld \n", disk_info.f_blocks);
+   // printf("total data blocks: %ld \n", disk_info.f_blocks);
+    qInfo()<<"total data blocks: "<<disk_info.f_blocks;
     //输出path所在磁盘的大小
-    printf("total file disk size: %d MB\n",total_size >> 20);
+   // printf("total file disk size: %d MB\n",total_size >> 20);
+    qInfo()<<"total file disk size: "<<(total_size >> 20)<<" MB";
     //输出非root用户可以用的磁盘空间大小
-    printf("avaiable size: %d MB\n",available_size >> 20);
+    //printf("avaiable size: %d MB\n",available_size >> 20);
+    qInfo()<<"avaiable size: "<<(available_size >> 20)<<" MB";
     //输出硬盘的所有剩余空间
-    printf("free size: %d MB\n",free_size >> 20);
+   // printf("free size: %d MB\n",free_size >> 20);
+    qInfo()<<"free size: "<<free_size<<" MB";
     //输出磁盘上文件节点个数
-    printf("total file nodes: %ld\n", disk_info.f_files);
+   // printf("total file nodes: %ld\n", disk_info.f_files);
+    qInfo()<<"total file nodes: "<<disk_info.f_files;
     //输出可用文件节点个数
-    printf("free file nodes: %ld\n", disk_info.f_ffree);
+   // printf("free file nodes: %ld\n", disk_info.f_ffree);
+    qInfo()<<"free file nodes:  "<<disk_info.f_ffree;
     //输出文件名最大长度
-    printf("maxinum length of file name: %ld\n", disk_info.f_namelen);
+   // printf("maxinum length of file name: %ld\n", disk_info.f_namelen);
+    qInfo()<<"maxinum length of file name: "<<disk_info.f_namelen;
 
     return 0;
 }
@@ -245,14 +254,21 @@ void getCPUStatus(Procstat& ps) {
      chdir("/proc");
      inputFile = fopen("stat", "r");
      if (!inputFile) {
-          perror("error: Can not open file.\n");
+         if(isDebug)
+            perror("error: Can not open file.\n");
+         else
+            qCritical()<<"error: Can not open file.";
      }
 
      char buff[1024];
      fgets(buff, sizeof(buff), inputFile); // Read 1 line.
-     printf(buff);
+     if(isDebug)
+        printf(buff);
      sscanf(buff, "%s %u %u %u %u %u %u %u %u %u", ps.processorName, &ps.user, &ps.nice, &ps.system, &ps.idle, &ps.iowait, &ps.irq, &ps.softirq, &ps.stealstolen, &ps.guest); // Scan from "buff".
-     printf("user: %u\n", ps.user);
+     if(isDebug)
+         printf("user: %u\n", ps.user);
+     else
+         qInfo()<<"user:"<<ps.user;
 
      fclose(inputFile);
 }
@@ -274,8 +290,12 @@ float calculateProcCPUUse(Procstat ps1, Procstat ps2) {
      unsigned int totalCPUTimePS2 = (ps2.user + ps2.nice + ps2.system + ps2.idle + ps2.iowait + ps2.irq + ps2.softirq + ps2.stealstolen + ps2.guest);
      unsigned int totalCPUTimePS1 = (ps1.user + ps1.nice + ps1.system + ps1.idle + ps1.iowait + ps1.irq + ps1.softirq + ps1.stealstolen + ps1.guest);
      float CPUUse = ((float)procTotalTime) / (float) totalCPUTime;
-     printf("totalCPUTime: %u\procTotalTime: %u ProcCPUUSE:%f\n", totalCPUTime, procTotalTime,CPUUse);
-    printf("totalCPUTimePS2: %u\totalCPUTimePS1: %u \n", totalCPUTimePS2, totalCPUTimePS1);
+     if(isDebug)
+         {
+         printf("totalCPUTime: %u\procTotalTime: %u ProcCPUUSE:%f\n", totalCPUTime, procTotalTime,CPUUse);
+         printf("totalCPUTimePS2: %u\totalCPUTimePS1: %u \n", totalCPUTimePS2, totalCPUTimePS1);
+     }
+
      return CPUUse;
 }
 
@@ -311,7 +331,8 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
     fp = fopen("/proc/meminfo","r");
     if(fp == NULL)
     {
-        perror("fopen:");
+        if(isDebug)
+            perror("fopen:");
         LOG(WARNING, "打不开系统内存文件");
       //  exit (0);
     }
@@ -339,7 +360,8 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
 
         if(fpProc == NULL)
         {
-            perror("fopen:");
+            if(isDebug)
+                perror("fopen:");
             LOG(WARNING, "打不开进程内存文件");
             return;
         }

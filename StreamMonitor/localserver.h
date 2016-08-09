@@ -22,6 +22,7 @@ public:
         if(m_pInstance == NULL)
         {
             m_pInstance = new LocalServer();
+            qInfo()<<"get instance of server";
         }
         return m_pInstance;
     }

@@ -979,12 +979,17 @@ void StreamMonitor::printDiskInfo()
 
 void StreamMonitor::printCameraInfo()
 {
+    qInfo()<<"camerasInfo.size():"<<camerasInfo.size()<<endl;
     for(int i=0; i<camerasInfo.size(); i++)
     {
         qInfo()<<"*****************camera:"<<camerasInfo[i].cmareId<<" info***********";
         qInfo()<<"在线状态:"<<(camerasInfo[i].online? "在线":"不在线");
         qInfo()<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta];
         qInfo()<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state];
+//        cout<<"*****************camera:"<<camerasInfo[i].cmareId.toStdString().c_str()<<" info***********"<<endl;
+//        cout<<"在线状态:"<<(camerasInfo[i].online? "在线":"不在线")<<endl;
+//        cout<<"实时视频录制状态："<<relVdRecErrInfoMap[camerasInfo[i].relVdSta].toStdString().c_str()<<endl;
+//        cout<<"历史文件路径:"<<camerasInfo[i].hisVdSta.hisVdPath.toStdString()<<"   文件状态:"<<hisFileErrInfoMap[camerasInfo[i].hisVdSta.state].toStdString().c_str()<<endl;
     }
 }
 void StreamMonitor::printRelVdReqInfo()

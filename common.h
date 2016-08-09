@@ -312,4 +312,7 @@ struct StreamInfoToOM
 };
 
 extern StreamInfoToOM strToOM;
+
+
+extern bool isDebug;
 #endif // COMMON_H
