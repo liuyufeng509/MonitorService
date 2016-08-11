@@ -13,6 +13,7 @@
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<time.h>
+# define NO_UNIFIED_OUT
 
 bool isDebug = false;
 
@@ -40,9 +41,10 @@ void init_daemon()
     umask(0);//重设文件创建的掩码
     return;
 }
+
 int main(int argc, char *argv[])
 {
-    init_daemon();
+    //init_daemon();
     QCoreApplication a(argc, argv);
 
     qInstallMessageHandler(outputMessage);

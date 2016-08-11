@@ -258,7 +258,7 @@ void getMemInfo(MemInfo &mem, char* procname="");         //获取mem信息
 //################全局变量定义###################
 extern bool isOMInited;     //运维中心接口是否已经初始化
 extern QString uuid;        //流媒体服务的uuid。
-bool gNetMasterReportData(const char *szStatusData);
+bool gNetMasterReportData(const char *szStatusData, bool isJnine = false);
 
 
 //******************运维中心相关数据定义**************************

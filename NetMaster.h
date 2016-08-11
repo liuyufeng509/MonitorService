@@ -97,6 +97,16 @@
 	int DLLEXPORT NetMasterPubNews(const char *szNews, const char *szAddrList=NULL);
 
 	/************************************************************************
+	* Function      : NetMasterPostData
+	* Description   : 网管前端推送状态数据
+	* Input         : const char * szStatusData		待推送的状态数据（XML格式）
+	* Output        : 无
+	* Return        : 返回推送数据的结果，0表示推送成功，其他表示错误码
+	* Note          :
+	************************************************************************/
+	int DLLEXPORT NetMasterPostData(const char *szStatusData);
+
+	/************************************************************************
 	* Function      : NetMasterQueryInfo
 	* Description   : 网管前端获取配置信息
 	* Input         : const char * szQueryType		查询信息的类型

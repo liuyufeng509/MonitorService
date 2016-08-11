@@ -381,20 +381,36 @@ void getMemInfo(MemInfo &mem, char* procname)         //获取mem信息
     }
 }
 
-bool gNetMasterReportData(const char *szStatusData)
+bool gNetMasterReportData(const char *szStatusData, bool isJnine)
 {
     if(isOMInited)
     {
-        if(!NetMasterReportData(szStatusData))
+        if(isJnine)
         {
-            LOG(INFO, ">>>>>> [NetMasterReportData] is Success. <<<<<<" );
-            return true;
-        }
-        else
+            if(!NetMasterPostData(szStatusData))
+            {
+                LOG(INFO, ">>>>>> [NetMasterPostData] is Success. <<<<<<" );
+                return true;
+            }
+            else
+            {
+                LOG(INFO, ">>>>>> [NetMasterPostData] is Fail! <<<<<<" );
+                return false;
+            }
+        }else
         {
-            LOG(INFO, ">>>>>> [NetMasterReportData] is Fail! <<<<<<" );
-            return false;
+            if(!NetMasterReportData(szStatusData))
+            {
+                LOG(INFO, ">>>>>> [NetMasterReportData] is Success. <<<<<<" );
+                return true;
+            }
+            else
+            {
+                LOG(INFO, ">>>>>> [NetMasterReportData] is Fail! <<<<<<" );
+                return false;
+            }
         }
+
     }else
     {
         LOG(WARNING, ">>>>>> [NetMasterReportData] is Faild. OM is not Init <<<<<<" );
@@ -451,8 +467,12 @@ bool SendDataToOM(const OMData &data)
     equip.appendChild(remark);
 
     QString xmlStr = doc.toString();
-
-    return gNetMasterReportData(xmlStr.toStdString().c_str());
+    if(isDebug)
+        cout<<xmlStr.toStdString()<<endl;
+    if(data.type == "j9")
+        return gNetMasterReportData(xmlStr.toStdString().c_str(), true);
+    else
+        return gNetMasterReportData(xmlStr.toStdString().c_str());
 }
 
 

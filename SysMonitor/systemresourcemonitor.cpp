@@ -1,5 +1,7 @@
 #include "systemresourcemonitor.h"
 #include"../config/qreadconfig.h"
+#include<QFileInfo>
+#include<QProcess>
 SystemResourceMonitor::SystemResourceMonitor()
 {
 }
@@ -685,6 +687,7 @@ void SystemResourceMonitor::KillAndStartProcess(char* processName)
         if( execl( fileName, "StreamPro",NULL, NULL ) == -1 )
         {
           qWarning()<<"进程:"<<fileName<<" 启动失败";
+          _exit(1);
         }
     }
     //system(fileName);
@@ -701,14 +704,17 @@ void SystemResourceMonitor::StartProcess()
         cout<<str1<<endl;
     char* fileName = NULL;
     fileName = (char*)str1.data();
-    signal(SIGCHLD, SIG_IGN);
-    if(fork()==0)
-    {
-        if( execl( fileName, "StreamPro",NULL, NULL ) == -1 )
-        {
-          qWarning()<<"进程:"<<fileName<<" 启动失败";
-        }
-    }
+    //使用qt创建进程
+    QProcess::startDetached(fileName);
+//    signal(SIGCHLD, SIG_IGN);
+//    if(fork()==0)
+//    {
+//        if( execl( fileName, QFileInfo(fileName).fileName().toStdString().c_str(),NULL, NULL ) == -1 )
+//        {
+//          qWarning()<<"进程:"<<fileName<<" 启动失败,退出进程："<<getpid();
+//          _exit(1);
+//        }
+//    }
     LOG(INFO, ("StartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 

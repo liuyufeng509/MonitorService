@@ -79,10 +79,10 @@ unix:!macx: LIBS += -L$$PWD/lib/ -lboost_thread-mt-d
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
 
-unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMasterd
+#unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMasterd
 
-INCLUDEPATH += $$PWD/.
-DEPENDPATH += $$PWD/.
+#INCLUDEPATH += $$PWD/.
+#DEPENDPATH += $$PWD/.
 
 unix:!macx: LIBS += -L$$PWD/lib/ -lprotobuf
 
@@ -105,6 +105,11 @@ INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
 
 unix:!macx: LIBS += -L$$PWD/lib/ -lstdc++
+
+INCLUDEPATH += $$PWD/.
+DEPENDPATH += $$PWD/.
+
+unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMasterd
 
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.

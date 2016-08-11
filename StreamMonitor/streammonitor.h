@@ -77,6 +77,8 @@ public slots:
 
     void relVdReqWithTimer();               //利用定时器重复请求实时视频调看,达到3次或者成功为止
     void hisVdReqWithTimer();               //利用定时器重复请求历史视频调看,达到3次或者成功为止
+
+    void SendALLToOM();
 private slots:
     void httpReadyRead();//接受到数据时的处理
     void httpFinished();//完成下载后处理
@@ -105,6 +107,8 @@ private:
 
     int   hisReqCount;               //历史视频请求调看的次数
     QTimer * hisRqTimer;        //历史视频请求调看计时器
+
+    QTimer *sendToOMTimer;      //初始化运维后，触发该计时器，收集所有状态，上报运维。
 
 };
 

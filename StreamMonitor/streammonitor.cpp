@@ -67,7 +67,74 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
         diskInfos.append(disk);
     }
 
+    sendToOMTimer = new QTimer(this);
+    connect(sendToOMTimer, SIGNAL(timeout()),this,SLOT(SendALLToOM()));
  }
+
+void StreamMonitor::SendALLToOM()
+{
+    //1.发送j7，摄像机在线消息
+    qInfo()<<"发送j7，摄像机在线消息";
+    for(int i=0; i<camerasInfo.size(); i++)
+    {
+        OMData om;
+        om.uuid = uuid;
+        om.devId = camerasInfo[i].uuid;
+        om.type = "j7";
+        om.status = camerasInfo[i].online? "0":"1";
+        SendDataToOM(om);
+    }
+
+    //2.发送j14, 硬盘信息
+    qInfo()<<"发送j14,硬盘信息";
+    for(int i=0; i<diskInfos.size(); i++)
+    {
+        OMData om;
+        om.uuid = uuid;
+        om.devId = uuid;
+        om.type = "j14";
+        om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
+
+        switch(diskInfos[i].state)
+        {
+            case  DiskStateInfo::CAN_NOT_MOUNT:
+                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
+                break;
+           case DiskStateInfo::DISK_OVER_LOAD:
+                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
+                break;
+            case DiskStateInfo::CAN_NOT_CREATE_FILE:
+                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "创建文件失败";
+                 break;
+            case DiskStateInfo::DISK_NORMAL:
+                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
+                 break;
+        }
+
+        SendDataToOM(om);
+    }
+
+    //3.发送流媒体服务是否在线消息。
+    qInfo()<<"发送流媒体在线消息";
+    OMData om;
+    om.uuid = uuid;
+    om.devId = uuid;
+    om.type="j9";
+    if(strToOM.disksState == StreamInfoToOM::UNORMAL)
+    {
+        om.remark = "所有硬盘都出现问题";
+    }else
+        om.remark = "流媒体服务在线";
+    if(strToOM.isStreamDown())
+        om.status = QString::number(1);
+    else
+        om.status=QString::number(0);
+
+    SendDataToOM(om);
+
+    sendToOMTimer->stop();
+}
+
 //解析xml协议
 void StreamMonitor::doParseXml(QString xml)
 {
@@ -166,9 +233,9 @@ void StreamMonitor::doParseXml(QString xml)
                 //来一条在线状态就要转发给运维
                 OMData om;
                 om.uuid = uuid;
-                om.devId= camInfo.uuid;
+                om.devId= camerasInfo[camerasInfo.indexOf(camInfo)].uuid;
                 om.type="j7";
-                om.status=camInfo.online;
+                om.status=camInfo.online? "0":"1";
                 SendDataToOM(om);
             }
         }
@@ -298,21 +365,23 @@ void StreamMonitor::doParseXml(QString xml)
                 if(!NetMasterDestroy())
                 {
                     LOG(INFO, ">>>>>> [NetMasterDestroy] is Success. <<<<<<\n");
-                }
-                else
-                {
-                    LOG(INFO, ">>>>>> [NetMasterDestroy] is Fail! <<<<<<\n");
-                    LOG(INFO, ("OM INFO:  uuid:"+uuidEl.text() +" ADDR:"+addr.text()).toStdString().c_str());
                     isOMInited = false;
                     if(!NetMasterInit(addr.text().toStdString().c_str(), uuidEl.text().toStdString().c_str()))
                     {
                         LOG(INFO, ">>>>>> [NetMasterInit] is Success. <<<<<<");
                         isOMInited = true;
+                        qInfo()<<"启动计时器，发送所有数据到运维";
+                        sendToOMTimer->start(15000);
                     }else
                     {
                         LOG(INFO, ">>>>>> [NetMasterInit] is Fail! <<<<<<" );
                         isOMInited = false;
                     }
+                }
+                else
+                {
+                    LOG(INFO, ">>>>>> [NetMasterDestroy] is Fail! <<<<<<\n");
+                    LOG(INFO, ("OM INFO:  uuid:"+uuidEl.text() +" ADDR:"+addr.text()).toStdString().c_str());
                 }
             }else
             {
@@ -320,6 +389,8 @@ void StreamMonitor::doParseXml(QString xml)
                 {
                     LOG(INFO, ">>>>>> [NetMasterInit] is Success. <<<<<<");
                     isOMInited = true;
+                    qInfo()<<"启动计时器，发送所有数据到运维";
+                    sendToOMTimer->start(15000);
                 }else
                 {
                     LOG(INFO, ">>>>>> [NetMasterInit] is Fail! <<<<<<" );
@@ -431,6 +502,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::CAN_NOT_MOUNT;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
             LOG(WARNING,inf.toStdString().c_str());
+            om.remark = inf;
         }else if(diskInfos[i].baseInfo.free_size<(QReadConfig::getInstance()->getDiskCong().minFreeSize<<20))      //硬盘空闲空间小于15G时，硬盘空间不足
         {
             if(diskInfos[i].state!=DiskStateInfo::DISK_OVER_LOAD)
@@ -438,6 +510,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::DISK_OVER_LOAD;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
             LOG(WARNING,inf.toStdString().c_str());
+            om.remark = inf;
         }else if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))         //是否能打开
         {
             //cout<<"创建文件:"<<fileName.toStdString()<<"失败"<<endl;
@@ -446,6 +519,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::CAN_NOT_CREATE_FILE;
             QString inf = "磁盘："+ fileName + " 创建文件失败";
             LOG(WARNING,inf.toStdString().c_str());
+            om.remark = inf;
         }else{
             QTextStream in(&file);
             in<<"this is a test file"<<"\n";
@@ -456,6 +530,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::DISK_NORMAL;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
             LOG(INFO,inf.toStdString().c_str());
+            om.remark = inf;
             isAllBad = false;
         }
         om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
@@ -479,15 +554,17 @@ void StreamMonitor::monitorDiskInfo()
     if(isAllBad)
     {
        strToOM.disksState = StreamInfoToOM::UNORMAL;
+       om.remark = "所有硬盘都出现问题";
     }else
     {
        strToOM.disksState = StreamInfoToOM::NORMAL;
+       om.remark = "流媒体服务在线";
     }
 
     if(strToOM.isStreamDown())
-        om.status = QString::number(0);
+        om.status = QString::number(1);
     else
-        om.status=QString::number(1);
+        om.status=QString::number(0);
 
     if(strToOM.isSend(t))
     {
@@ -569,6 +646,8 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
          QString fileName = "";
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
+        db.setUserName("");
+        db.setPassword("");
         if(db.open())
         {
             QSqlQuery query;
@@ -587,6 +666,7 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
             {
                 LOG(WARNING, "查询文件名失败");
             }
+            db.close();
 
         }else
         {
@@ -735,6 +815,8 @@ void StreamMonitor::monitorDBStatus()
                     return;
                 }
                  db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
+                 db.setUserName("");
+                 db.setPassword("");
                  if(db.open())
                  {
                      QSqlQuery queryWrite;
@@ -747,6 +829,7 @@ void StreamMonitor::monitorDBStatus()
                           LOG(WARNING, (QString("插入数据失败:") + querys).toStdString().c_str());
                      }else
                      {
+                         qInfo()<<"插入数据到数据库"<<dbPath<<"成功";
                          //delete the rec insertted.
                          QSqlQuery queryDelete;
                          QString delSql = "delete from VIDEO_RECORD  where CAMID=11111 and FILENAME=\"testInsert\"";
@@ -756,12 +839,15 @@ void StreamMonitor::monitorDBStatus()
                              QString querys = queryDelete.lastError().text();
                              cout<<querys.toStdString();
                              LOG(WARNING, (QString("删除数据失败:") + querys).toStdString().c_str());
-                         }
+                         }else
+                             qInfo()<<"删除数据到数据库"<<dbPath<<"成功";
                      }
+                     db.close();
                  }else
                  {
                      dbStaInfo.DBState = DBStatusInfo::DB_OPEN_FAIL;
                      LOG(WARNING, (QString("打开失败的数据库文件：")+dbPath).toStdString().c_str());
+                     qWarning()<<db.lastError();
                  }
         }
 

@@ -20,7 +20,7 @@ void QReadConfig::readConfigFile(QString filePath)
     domainSockConf.checkTimer = configIniRead->value("DoMainSock/checktime").toInt();
 
     sysResConf.bOpen = configIniRead->value("SysResource/open").toBool();
-    sysResConf.timer = configIniRead->value("SysResource/timer").toBool();
+    sysResConf.timer = configIniRead->value("SysResource/timer").toInt();
 
     diskConf.diskPaths = configIniRead->value("Disk/tmpfilepath").toString().split('#');
     diskConf.diskFileNames = configIniRead->value("Disk/diskfilename").toString().split('#');
