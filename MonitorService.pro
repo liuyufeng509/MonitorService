@@ -10,7 +10,7 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 DEFINES=WITH_OPENSSL
-LIBS= -lgsoap++ -lssl -lcrypto
+LIBS= -lssl -lcrypto
 
 SOURCES += main.cpp \
     config/qreadconfig.cpp \
@@ -21,13 +21,11 @@ SOURCES += main.cpp \
     commandline.cpp \
     StreamMonitor/localclient.cpp \
     StreamMonitor/localserver.cpp \
-    intcommon/soapC.cpp \
-    intcommon/soapintcommonProxy.cpp \
-    intcommon/soapJqServiceHttpBindingProxy.cpp \
-    intcommon/soapPzServiceImplServiceSoapBindingProxy.cpp \
     intcommon/stdsoap2.cpp \
     SysMonitor/systemresourcemonitor.cpp \
-    common.cpp
+    common.cpp \
+    intcommon/BaseC.cpp \
+    intcommon/BaseClient.cpp
 
 HEADERS += \
     config/qreadconfig.h \
@@ -42,16 +40,12 @@ HEADERS += \
     common.h \
     intcommon/BaseInterface.h \
     intcommon/intcommon.nsmap \
-    intcommon/JqServiceHttpBinding.nsmap \
-    intcommon/PzServiceImplServiceSoapBinding.nsmap \
-    intcommon/soapH.h \
-    intcommon/soapintcommonProxy.h \
-    intcommon/soapJqServiceHttpBindingProxy.h \
-    intcommon/soapPzServiceImplServiceSoapBindingProxy.h \
-    intcommon/soapStub.h \
     intcommon/stdsoap2.h \
     SysMonitor/systemresourcemonitor.h \
-    NetMaster.h
+    NetMaster.h \
+    intcommon/BaseH.h \
+    intcommon/BaseintcommonObject.h \
+    intcommon/BaseStub.h
 
 DISTFILES += \
     config.ini

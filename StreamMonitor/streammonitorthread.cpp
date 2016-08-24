@@ -44,6 +44,8 @@ void StreamMonitorThread::run()
     connect(threadHeartTimer, SIGNAL(timeout()), streamMonitor, SLOT(monitorThreads()));
     threadHeartTimer->start(QReadConfig::getInstance()->getThreadSvrConf().timer);
 
+    //启动10秒后，向流媒体请求一次基本数据，目的是为了防止监控服务重启后，没有流媒体数据无法监控。
+    QTimer::singleShot(10000, streamMonitor, SLOT(getHbBaseData()) );
     exec();
 }
 

@@ -13,10 +13,42 @@
 #include<QSqlError>
 
 #include"intcommon/intcommon.nsmap"
-#include"intcommon/soapintcommonProxy.h"
 #include "intcommon/stdsoap2.h"
+#include "intcommon/BaseintcommonObject.h"
 
 using namespace std;
+
+int InitSoap(struct soap * soap, const char * szProxyHost, const char * szProxyPort)
+{
+    soap_init(soap);
+
+    soap->send_timeout = QReadConfig::getInstance()->getGsoapInfoConf().sendTimeout; // 超时时间
+    soap->recv_timeout = QReadConfig::getInstance()->getGsoapInfoConf().recvTimeout; // 接收超时
+    soap->connect_timeout = QReadConfig::getInstance()->getGsoapInfoConf().connTimeout; //连接超时
+
+    //如果存在代理服务器
+    if ( strlen(szProxyHost) > 0)
+    {
+        soap->proxy_host = szProxyHost;
+        soap->proxy_port = atoi(szProxyPort) ? atoi(szProxyPort) : 80;
+    }
+    soap->userid = "roy" /*QReadConfig::getInstance()->getGsoapInfoConf().userID.toStdString().c_str()*/;
+    soap->passwd = "liang"/*QReadConfig::getInstance()->getGsoapInfoConf().passwd.toStdString().c_str()*/;
+    qInfo()<<"usrid="<<soap->userid<<" passwd="<<soap->passwd;
+    qInfo()<<"usrid="<<QReadConfig::getInstance()->getGsoapInfoConf().userID.toStdString().c_str()<<" pwd="<<QReadConfig::getInstance()->getGsoapInfoConf().passwd;
+
+#if defined(WITH_OPENSSL)
+    soap_ssl_init();
+    if ( soap_ssl_client_context(soap, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL) )
+    {
+        //soap_print_fault(soap, stderr);
+        cout<<"加载客户端证书失败。"<<endl;
+        return 110;
+    }
+#endif
+    return 0;
+}
+
 
 StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),hisReqCount(0)
 {
@@ -70,6 +102,25 @@ StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),h
     sendToOMTimer = new QTimer(this);
     connect(sendToOMTimer, SIGNAL(timeout()),this,SLOT(SendALLToOM()));
  }
+
+void StreamMonitor::getHbBaseData()
+{
+    QDomDocument doc;
+    QDomProcessingInstruction instruction;
+    instruction = doc.createProcessingInstruction("xml","version=\"1.0\" encoding=\"UTF-8\"");
+    doc.appendChild(instruction);
+
+    QDomElement message = doc.createElement("message");  //<message>
+    doc.appendChild(message);
+    QDomElement type = doc.createElement("TYPE");//<TYPE>
+    QDomText typeContent = doc.createTextNode(QString::number(Send_GetData_Req));
+    type.appendChild(typeContent);
+    message.appendChild(type);
+
+    QString bsDataXml = doc.toString();
+    qInfo()<<bsDataXml;
+    sendMsg(bsDataXml);
+}
 
 void StreamMonitor::SendALLToOM()
 {
@@ -439,7 +490,7 @@ void StreamMonitor::sendMsg(QString xml)
     char data[4];
     memset(data, 0, 4);
     memcpy(data, &size, sizeof(qint32));
-    datas.append(QByteArray(data, 4));
+    //datas.append(QByteArray(data, 4));
     datas.append(xml.toLatin1());
     LocalClient::getInstance()->writeData(datas);
 }
@@ -540,6 +591,7 @@ void StreamMonitor::monitorDiskInfo()
         {
             SendDataToOM(om);
             LOG(INFO,"发送硬盘状态信息给运维中心");
+            sendDiskState();        //发送硬盘状态信息
         }
     }
 
@@ -572,8 +624,6 @@ void StreamMonitor::monitorDiskInfo()
         qInfo()<<"流媒体服务状态在线状态发生变化，上传运维中心";
     }else
         qInfo()<<"流媒体服务状态在线状态未发生变化，不需上传运维中心";
-
-    sendDiskState();        //发送硬盘状态信息
      return;
 }
 void StreamMonitor::sendDbStatus()
@@ -644,22 +694,25 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
  {
         QString dbPath = "/usr/local/"+cmeraId+"_Video.db";
          QString fileName = "";
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+         QSqlDatabase db;
+         if(QSqlDatabase::contains("qt_sql_default_connection"))
+           db = QSqlDatabase::database("qt_sql_default_connection");
+         else
+           db = QSqlDatabase::addDatabase("QSQLITE");
+
         db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
         db.setUserName("");
         db.setPassword("");
         if(db.open())
         {
+            qInfo()<<"DBOpened"<<endl;
             QSqlQuery query;
-            if (query.exec(QString("select FILENAME from  VIDEO_RECORD")))   //尝试列出  表的所有记录
+            if (query.exec(QString("select filename from video_record order by begintime desc")))   //尝试列出  表的所有记录
             {
                 while(query.next())
                 {
-                    QString res = query.value(0).toString();
-                    if(fileName<res)
-                    {
-                        fileName = res;
-                    }
+                    fileName = query.value(0).toString();
+                    break;
                 }
 
             }else
@@ -701,51 +754,46 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
       sendMsg(relVdRecXml);
   }
 
-  int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
-  {
-      //初始化gsoap对象
-      intcommonProxy p;
-      p.soap_endpoint = QReadConfig::getInstance()->getGsoapInfoConf().soapEndpoint.toStdString().c_str();
-      p.send_timeout=QReadConfig::getInstance()->getGsoapInfoConf().sendTimeout;
-      p.recv_timeout=QReadConfig::getInstance()->getGsoapInfoConf().recvTimeout;
-      p.connect_timeout=QReadConfig::getInstance()->getGsoapInfoConf().connTimeout;
-      p.userid = QReadConfig::getInstance()->getGsoapInfoConf().userID.toStdString().c_str();
-      p.passwd = QReadConfig::getInstance()->getGsoapInfoConf().passwd.toStdString().c_str();
-
-  #if defined(WITH_OPENSSL)
-      soap_ssl_init();
-      if ( soap_ssl_client_context(&p, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL) )
+int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
+{
+      struct soap rsoap;
+      int retcode = InitSoap(&rsoap, "", "");
+      if ( retcode )
       {
-          p.soap_stream_fault(std::cerr);
-          LOG(GUZHANG,"加载客户端证书失败。");
-          return 110;
+          //初始化失败
+          qInfo()<<"初始化失败"<<endl;
+          return retcode;
       }
-  #endif
+      //调用视频切换接口
+      struct ns__HBNET_VIDEO_STREAM VideoStream;
+      VideoStream.szDescription = (char*)soap_malloc(&rsoap, 256);
 
       ns__HBUSERINFO nsUserInfo;
-      nsUserInfo.strUser="test";
-      nsUserInfo.nPermission=1;
-      nsUserInfo.nCtrlTimeOut=30;
+      nsUserInfo.strUser = "test";
+      nsUserInfo.nPermission = 1;
+      nsUserInfo.nCtrlTimeOut = 30;
 
-      struct ns__HBNET_VIDEO_STREAM VideoStream;
-      VideoStream.szDescription = (char*)soap_malloc(&p, 256);
-      strcpy(VideoStream.szDescription, camera.udpAddr.toStdString().c_str());
-
-      if(SOAP_OK==p.SwitchCameraToStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&VideoStream))
+      retcode = soap_call_ns__SwitchCameraToStream(&rsoap, QReadConfig::getInstance()->getGsoapInfoConf().soapEndpoint.toStdString().c_str(), "", nsUserInfo, camera.cmareId.toInt(), &VideoStream);
+      qInfo()<<"retcode = "<<retcode<<endl;
+      if(retcode==SOAP_OK)
       {
           qInfo()<<"摄像机"<<camera.cmareId<<"实时视频调看成功,释放请求";
-          ns__Response res;
-          p.AbandonCameraStream(p.soap_endpoint, "", nsUserInfo, camera.cmareId.toLong(),&res);
-          qInfo()<<"retcode="<<res.retcode<<" strMessage="<<QString(res.strMessage.c_str());
-          return 0;
+          soap_destroy(&rsoap);
+          soap_end(&rsoap);
+          soap_done(&rsoap);
+          qInfo()<<"释放完毕";
       }else
       {
           qCritical()<<"摄像机"<<camera.cmareId<<"实时视频调看失败,释放请求";
-          p.soap_stream_fault(std::cerr);
-          return 1;
+          soap_destroy(&rsoap);
+          soap_end(&rsoap);
+          soap_done(&rsoap);
+          qInfo()<<"释放完毕";
+          return -1;
       }
-    return 0;
-  }
+      return 0;
+}
+
 void StreamMonitor::hisVdReqWithTimer()
 {
     if(hisReqCount==3)
@@ -776,16 +824,25 @@ void StreamMonitor::hisVdReqWithTimer()
 void StreamMonitor::monitorThreads()
 {
     LOG(INFO,"monitorThreadsHeart");
+    if(!isProcessAlived((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str()))
+        {
+        qInfo()<<"HbMedia is not alived";
+        return ;
+    }
+    qInfo()<<"threadsInfo.size:"<<threadsInfo.size();
     for(int i=0; i<threadsInfo.size(); i++)
     {
-        if((time(NULL)-threadsInfo[i].heartime)>20)
+        if((time(NULL)-threadsInfo[i].heartime)>70)
         {
             QString str = threadsInfo[i].action==1? "http线程":"磁盘检测线程";
-            cout<<str.toStdString()<<" 心跳超时, 发送给流媒体处理";
+            qInfo()<<str<<" 心跳超时, 发送给流媒体处理";
             threadsInfo[i].state = ThreadStateInfo::Dead;
             sendThreadInfo(threadsInfo[i]);
         }else
+        {
             threadsInfo[i].state = ThreadStateInfo::NORMAL;
+            qInfo()<<"线程"<<threadsInfo[i].threadId<<" 类型:"<<threadsInfo[i].action<<"状态正常";
+        }
     }
 
 }
@@ -793,6 +850,12 @@ void StreamMonitor::monitorThreads()
 void StreamMonitor::monitorDBStatus()
 {
     LOG(INFO,"monitoring DB status");
+    if(!isProcessAlived((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str()))
+        {
+        qInfo()<<"HbMedia is not alived";
+        clearAll();
+        return ;
+    }
     dbStatusInfos.clear();
     for(int i=0; i<camerasInfo.size(); i++)
     {
@@ -808,17 +871,24 @@ void StreamMonitor::monitorDBStatus()
         }else
         {
             //1.判断能否打开数据库
-                QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+                QSqlDatabase db;
+                if(QSqlDatabase::contains("qt_sql_default_connection"))
+                  db = QSqlDatabase::database("qt_sql_default_connection");
+                else
+                  db = QSqlDatabase::addDatabase("QSQLITE");
+
                 if(db.isOpen())
                 {
                     LOG(WARNING, "db already opened");
                     return;
                 }
+
                  db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
                  db.setUserName("");
                  db.setPassword("");
                  if(db.open())
                  {
+                     qInfo()<<"db opened";
                      QSqlQuery queryWrite;
                      QString insertSql = "insert into VIDEO_RECORD (CAMID,FILENAME) VALUES(11111,\"testInsert\")";
                      if(!queryWrite.exec(insertSql))
@@ -865,7 +935,7 @@ void StreamMonitor::monitorDBStatus()
     {
         relRqTimer->stop();
         relReqCount=0;
-        if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+        if(relAndHisVdReqStat.relVdReq!= RelAndHisVdReqStat::NORMAL)
         {
             //重启流媒体进程:此处只杀死流媒体进程，进程狗功能会自动重启流媒体服务
             kill_spider_backgroud((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
@@ -878,7 +948,7 @@ void StreamMonitor::monitorDBStatus()
             if(camerasInfo[i].online)
             {
                 relAndHisVdReqStat.relVdReq = monitorRelVdWithGsoap(camerasInfo[i]);
-                if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+                if(relAndHisVdReqStat.relVdReq != RelAndHisVdReqStat::NORMAL)
                 {
                    relReqCount++;
                 }else
@@ -908,12 +978,13 @@ void StreamMonitor::monitorDBStatus()
 
      QDomElement equip = doc.createElement("Equipment");//<Equipment>
      message.appendChild(equip);
-     QDomElement camid = doc.createElement("CAMID ");//<CAMID >
+     QDomElement camid = doc.createElement("CAMID");//<CAMID>
      QDomText camidStr = doc.createTextNode(cameraId);
      camid.appendChild(camidStr);
      equip.appendChild(camid);
 
      QString relVdRecXml = doc.toString();
+     qInfo()<<"his request:"<<relVdRecXml;
      sendMsg(relVdRecXml);
  }
 
@@ -971,8 +1042,15 @@ void StreamMonitor::httpFinished()
 
  void StreamMonitor::monitorRelAndHisVdReq()
   {
+     if(!isProcessAlived((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str()))
+         {
+         qInfo()<<"HbMedia is not alived";
+         clearAll();
+         return ;
+     }
       //1.实时视频调看，通过gsoap接口调看
-     qInfo()<<"实时视频调看监控开始";
+     qInfo()<<"实时视频调看监控开始:relReqCount="<<relReqCount;
+
      if(relReqCount==0)                       //判断如果count不为0，说明正在用定时器重复请求中，此次不请求
      {
          for(int i=0; i<camerasInfo.size(); i++)
@@ -980,7 +1058,7 @@ void StreamMonitor::httpFinished()
              if(camerasInfo[i].online)
              {
                  relAndHisVdReqStat.relVdReq = monitorRelVdWithGsoap(camerasInfo[i]);
-                 if(relAndHisVdReqStat.relVdReq==RelAndHisVdReqStat::UNORMAL)
+                 if(relAndHisVdReqStat.relVdReq!=RelAndHisVdReqStat::NORMAL)
                  {
                     qWarning()<<"调看摄像机："<<camerasInfo[i].cmareId<<"实时视频失败,启动定时器，请求三次";
                     relRqTimer->start(2000);
@@ -1009,8 +1087,27 @@ void StreamMonitor::httpFinished()
 
   }
 
+ void StreamMonitor::clearAll()
+ {
+    relAndHisVdReqStat.relVdReq = RelAndHisVdReqStat::NORMAL;
+    relAndHisVdReqStat.hisVdReq = RelAndHisVdReqStat::NORMAL;
+
+    relReqCount = 0;
+    relRqTimer->stop();
+
+    hisReqCount = 0;
+    hisRqTimer->stop();
+    sendToOMTimer->stop();
+ }
+
 void StreamMonitor::monitorCamera()
 {
+   if(!isProcessAlived((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str()))
+       {
+       qInfo()<<"HbMedia is not alived";
+       clearAll();
+       return ;
+   }
    if( QReadConfig::getInstance()->getCameraSvrConf().bOpen)
    {
         LOG(INFO,"monitoring DiskInfo First....");
@@ -1027,7 +1124,7 @@ void StreamMonitor::monitorCamera()
                 QFileInfo fileInfo(recingFilePath);
                 if(fileInfo.exists())
                 {
-                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))<120)  //修改时间在两分钟内
+                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))>120)  //修改时间在两分钟以外，说明有问题
                     {
                         camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
                         QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题,通知流媒体重启线程";

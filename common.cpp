@@ -131,6 +131,16 @@ std::string getPidByName(char* task_name)
     return std::string(pidstr);
 }
 
+int isProcessAlived(char *task_name)
+{
+    std::string pidstr =getPidByName(task_name);
+    int pid = atoi(pidstr.c_str());
+   if(pid > 0)
+   {
+       return true;
+   }else
+    return false;
+}
 int kill_spider_backgroud(char* task_name)
 {
       /* send signal SIGTERM to kill */
@@ -138,7 +148,8 @@ int kill_spider_backgroud(char* task_name)
     int pid = atoi(pidstr.c_str());
    if(pid > 0)
    {
-       kill(pid, SIGTERM);
+       kill(pid, SIGKILL);
+       qInfo()<<"kill HbMedia"<<endl;
    }
    return 0;
 }

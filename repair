@@ -6,8 +6,8 @@ function check(){
         nohup  python  /runscript/working/$1 &
     fi
 }
-
-nohup /home/liuyufeng/build-MonitorService-Desktop_Qt_5_6_1_GCC_64bit-Debug/MonitorService 
+cd /home/liuyufeng/testWatchdog
+nohup ./MonitorService &
 count=`ps -ef |grep MonitorService |grep -v "grep" |wc -l`
 #echo $count
 if [ 0 == $count ];then

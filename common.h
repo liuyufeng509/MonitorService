@@ -218,6 +218,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 //****************************系统资源监控定义begin****************************
 #define BUF_SIZE 1024
 std::string getPidByName(char* task_name);  //根据进程名获取pid
+int isProcessAlived(char *task_name);       //进程是否活
 int kill_spider_backgroud(char* task_name); //依据进程名，杀死进程
 
 int getDiskInfo(char *path, DiskStateInfo &diskInfo);   //获取磁盘状态
