@@ -28,7 +28,7 @@ public:
     bool isConnect(){return isConnected;}
 
     ~LocalClient();
-    void  writeData(QByteArray data);
+    bool  writeData(QByteArray data);
 
 private:
     explicit LocalClient();

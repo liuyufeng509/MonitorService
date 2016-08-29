@@ -34,7 +34,9 @@ private:
     QTimer *dbMonitorTimer;                         //数据库状态监视计时器
     QTimer *threadHeartTimer;                        //线程心跳检测定时器
 
+    QTimer *getHbDataTimer;                         //获取HBMedia基础数据的定时器
     StreamMonitor *streamMonitor;           //流媒体监控模块
+
 };
 
 #endif // STREAMMONITORTHREAD_H

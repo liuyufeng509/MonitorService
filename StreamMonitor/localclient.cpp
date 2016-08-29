@@ -43,13 +43,14 @@ void LocalClient::requestConnection()
     }
 }
 
-void LocalClient::writeData(QByteArray data)
+bool LocalClient::writeData(QByteArray data)
 {
     //if(isConnected)
     if(isConnected)
     {
         socket->write(data);
         qInfo()<<"发送数据："<<QString(data)<<endl;
+        return true;
     }else
     {
         if(socket!=NULL)
@@ -57,6 +58,7 @@ void LocalClient::writeData(QByteArray data)
         else
             qWarning()<<"Socket is NULL";
         requestConnection();
+        return false;
     }
 }
 

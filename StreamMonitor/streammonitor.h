@@ -45,7 +45,7 @@ public:
     void checkHisFile(CameraStateInfo &camera);//检查历史文件是否有问题
     void checkHisURL(QString httpUrl);  //调看该url对应的历史视频
 
-    void sendMsg(QString xml);
+    bool sendMsg(QString xml);
     void sendDiskState();                       //硬盘有问题，返回消息
     void sendHisFileState();                    //历史文件有问题，返回消息,此处先保留，上报运维即可
     void sendRelVdRecState(QString cameraId);               //当前录制文件有问题，返回消息
@@ -67,6 +67,7 @@ public:
     void printDbStatusInfo();
     void printThreadsInfo();
 
+    void setGetHbDataTimer(QTimer *timer){getHbTimer = timer;}
 signals:
 
 public slots:
@@ -112,7 +113,7 @@ private:
     QTimer * hisRqTimer;        //历史视频请求调看计时器
 
     QTimer *sendToOMTimer;      //初始化运维后，触发该计时器，收集所有状态，上报运维。
-
+    QTimer *getHbTimer;
     //清空所有数据（HbMedia 进程不存在时)
     void clearAll();
 

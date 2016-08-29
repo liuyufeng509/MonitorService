@@ -119,7 +119,10 @@ void StreamMonitor::getHbBaseData()
 
     QString bsDataXml = doc.toString();
     qInfo()<<bsDataXml;
-    sendMsg(bsDataXml);
+    if(sendMsg(bsDataXml))      //如果发送成功，则不再发送，停掉计时器，否则继续
+    {
+        getHbTimer->stop();
+    }
 }
 
 void StreamMonitor::SendALLToOM()
@@ -483,7 +486,7 @@ void StreamMonitor::checkHisFile(CameraStateInfo &camera)
 
 }
 
-void StreamMonitor::sendMsg(QString xml)
+bool StreamMonitor::sendMsg(QString xml)
 {
     QByteArray datas;
      qint32 size=xml.length();
@@ -492,7 +495,7 @@ void StreamMonitor::sendMsg(QString xml)
     memcpy(data, &size, sizeof(qint32));
     //datas.append(QByteArray(data, 4));
     datas.append(xml.toLatin1());
-    LocalClient::getInstance()->writeData(datas);
+    return LocalClient::getInstance()->writeData(datas);
 }
 
 void StreamMonitor::sendDiskState()
@@ -686,6 +689,8 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
     QDomText action_str = doc.createTextNode(QString::number(thread.action));
     action.appendChild(action_str);
 
+    equip.appendChild(thrId);
+    equip.appendChild(action);
     QString threadXml = doc.toString();
     sendMsg(threadXml);
 }
@@ -837,7 +842,8 @@ void StreamMonitor::monitorThreads()
             QString str = threadsInfo[i].action==1? "http线程":"磁盘检测线程";
             qInfo()<<str<<" 心跳超时, 发送给流媒体处理";
             threadsInfo[i].state = ThreadStateInfo::Dead;
-            sendThreadInfo(threadsInfo[i]);
+            if(threadsInfo[i].action!=1)
+                sendThreadInfo(threadsInfo[i]);
         }else
         {
             threadsInfo[i].state = ThreadStateInfo::NORMAL;
