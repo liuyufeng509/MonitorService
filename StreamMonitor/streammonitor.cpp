@@ -1046,6 +1046,9 @@ void StreamMonitor::httpReadyRead()
         }
 
     }
+
+    disconnect(reply,SIGNAL(readyRead()),this,SLOT(httpReadyRead()));
+    reply->deleteLater();
 }
 
 void StreamMonitor::httpFinished()
