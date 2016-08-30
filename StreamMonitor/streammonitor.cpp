@@ -467,9 +467,11 @@ void StreamMonitor::checkHisFile(CameraStateInfo &camera)
     if(!file.exists())
     {
         camera.hisVdSta.state = HisVdFileState::NOT_EXIST;
+        qInfo()<<"文件"<<camera.hisVdSta.hisVdPath<<" 不存在";
     }else if(!file.open(QIODevice::ReadOnly))
     {
         camera.hisVdSta.state=HisVdFileState::NOT_OPEN;
+        qInfo()<<"文件"<<camera.hisVdSta.hisVdPath<<" 打不开";
     }else
     {
         quint8 data[86];//先验证前86个字节
@@ -480,8 +482,12 @@ void StreamMonitor::checkHisFile(CameraStateInfo &camera)
             data[3]==0xba&&data[17]==0xbb&&data[35]==0xbc&&data[65]==0xe0&&(data[85]&0x1f)==7)
         {
             camera.hisVdSta.state=HisVdFileState::NORMAL;
+            qInfo()<<"文件"<<camera.hisVdSta.hisVdPath<<" 验证通过，历史文件正常";
         }else
+        {
             camera.hisVdSta.state=HisVdFileState::UNNORMAL;
+            qInfo()<<"文件"<<camera.hisVdSta.hisVdPath<<" 验证未通过，历史文件异常";
+        }
     }
 
 }
@@ -840,10 +846,12 @@ void StreamMonitor::monitorThreads()
         if((time(NULL)-threadsInfo[i].heartime)>70)
         {
             QString str = threadsInfo[i].action==1? "http线程":"磁盘检测线程";
-            qInfo()<<str<<" 心跳超时, 发送给流媒体处理";
             threadsInfo[i].state = ThreadStateInfo::Dead;
             if(threadsInfo[i].action!=1)
+            {
                 sendThreadInfo(threadsInfo[i]);
+                qInfo()<<str<<" 心跳超时, 发送给流媒体处理";
+            }
         }else
         {
             threadsInfo[i].state = ThreadStateInfo::NORMAL;
