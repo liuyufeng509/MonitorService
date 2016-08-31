@@ -139,34 +139,34 @@ void StreamMonitor::SendALLToOM()
         SendDataToOM(om);
     }
 
-    //2.发送j14, 硬盘信息
-    qInfo()<<"发送j14,硬盘信息";
-    for(int i=0; i<diskInfos.size(); i++)
-    {
-        OMData om;
-        om.uuid = uuid;
-        om.devId = uuid;
-        om.type = "j14";
-        om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
+    //2.发送j14, 硬盘信息.  j14改为摄像机录制文件状态，所以不再发送硬盘状态，所以注释掉。
+//    qInfo()<<"发送j14,硬盘信息";
+//    for(int i=0; i<diskInfos.size(); i++)
+//    {
+//        OMData om;
+//        om.uuid = uuid;
+//        om.devId = uuid;
+//        om.type = "j14";
+//        om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
 
-        switch(diskInfos[i].state)
-        {
-            case  DiskStateInfo::CAN_NOT_MOUNT:
-                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
-                break;
-           case DiskStateInfo::DISK_OVER_LOAD:
-                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
-                break;
-            case DiskStateInfo::CAN_NOT_CREATE_FILE:
-                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "创建文件失败";
-                 break;
-            case DiskStateInfo::DISK_NORMAL:
-                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
-                 break;
-        }
+//        switch(diskInfos[i].state)
+//        {
+//            case  DiskStateInfo::CAN_NOT_MOUNT:
+//                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
+//                break;
+//           case DiskStateInfo::DISK_OVER_LOAD:
+//                om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
+//                break;
+//            case DiskStateInfo::CAN_NOT_CREATE_FILE:
+//                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "创建文件失败";
+//                 break;
+//            case DiskStateInfo::DISK_NORMAL:
+//                 om.remark = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
+//                 break;
+//        }
 
-        SendDataToOM(om);
-    }
+//        SendDataToOM(om);
+//    }
 
     //3.发送流媒体服务是否在线消息。
     qInfo()<<"发送流媒体在线消息";
@@ -550,10 +550,11 @@ void StreamMonitor::monitorDiskInfo()
         getDiskInfo((char*)diskInfos[i].baseInfo.mountPath.toStdString().c_str(), diskInfos[i]);
 
         qInfo()<<"filename:"<<fileName<<" mountpath:"<<diskInfos[i].baseInfo.mountPath;
-        OMData om;
-        om.uuid = uuid;
-        om.devId = uuid;
-        om.type="j14";
+        //j14不再是硬盘状态，而是摄像机录制状态。
+//        OMData om;
+//        om.uuid = uuid;
+//        om.devId = uuid;
+//        om.type="j14";
 
         if(!fileInfo.isDir())       //加载目录是否存在判断硬盘是否加载
         {
@@ -562,7 +563,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::CAN_NOT_MOUNT;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "挂载目录不存在";
             LOG(WARNING,inf.toStdString().c_str());
-            om.remark = inf;
+            //om.remark = inf;
         }else if(diskInfos[i].baseInfo.free_size<(QReadConfig::getInstance()->getDiskCong().minFreeSize<<20))      //硬盘空闲空间小于15G时，硬盘空间不足
         {
             if(diskInfos[i].state!=DiskStateInfo::DISK_OVER_LOAD)
@@ -570,7 +571,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::DISK_OVER_LOAD;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "空间不足";
             LOG(WARNING,inf.toStdString().c_str());
-            om.remark = inf;
+            //om.remark = inf;
         }else if(!file.open(QIODevice::WriteOnly  | QIODevice::Text|QIODevice::Append))         //是否能打开
         {
             //cout<<"创建文件:"<<fileName.toStdString()<<"失败"<<endl;
@@ -579,7 +580,7 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::CAN_NOT_CREATE_FILE;
             QString inf = "磁盘："+ fileName + " 创建文件失败";
             LOG(WARNING,inf.toStdString().c_str());
-            om.remark = inf;
+           // om.remark = inf;
         }else{
             QTextStream in(&file);
             in<<"this is a test file"<<"\n";
@@ -590,18 +591,18 @@ void StreamMonitor::monitorDiskInfo()
             diskInfos[i].state = DiskStateInfo::DISK_NORMAL;
             QString inf = "磁盘："+diskInfos[i].baseInfo.mountPath + "正常";
             LOG(INFO,inf.toStdString().c_str());
-            om.remark = inf;
+            //om.remark = inf;
             isAllBad = false;
         }
-        om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
+        //om.status = diskInfos[i].baseInfo.mountPath +":"+ QString::number(diskInfos[i].state==DiskStateInfo::DISK_NORMAL? 1:0);
 
         //发送给运维
-        if(isStChanged)
-        {
-            SendDataToOM(om);
-            LOG(INFO,"发送硬盘状态信息给运维中心");
-            sendDiskState();        //发送硬盘状态信息
-        }
+//        if(isStChanged)
+//        {
+//            SendDataToOM(om);
+//            LOG(INFO,"发送硬盘状态信息给运维中心");
+//            sendDiskState();        //发送硬盘状态信息
+//        }
     }
 
     //判断是否发送流媒体服务状态的信息。
@@ -1132,37 +1133,89 @@ void StreamMonitor::monitorCamera()
         LOG(INFO,"monitoring Camera info now");
         for(int i=0; i<camerasInfo.count(); i++)
         {
+            OMData om;
+            om.uuid = uuid;
+            om.devId = camerasInfo.at(i).uuid;
+            om.type = "j14";
+            bool isChanged = false;     //记录摄像机录制状态是否有变化，变化才上报运维服务器。
+
             if(camerasInfo.at(i).online)
             {
                 //历史文件正确性检测，不是由监控主动发起，是由流媒体发送，出发监控进行监控,此处只检测当前录制的文件状态是否正常
                  //将录制状态计入内存;
                 //若不能录制，重启录制线程
                 QString recingFilePath = getFileName(camerasInfo.at(i).cmareId);
-                QFileInfo fileInfo(recingFilePath);
-                if(fileInfo.exists())
+
+                //1.判断该摄像机所在的硬盘是否正常。
+                DiskStateInfo disk;
+                for(int j=0; j<diskInfos.size(); j++)
                 {
-                    if(abs(fileInfo.lastModified().toTime_t()-time(NULL))>120)  //修改时间在两分钟以外，说明有问题
+                    if(recingFilePath.contains(diskInfos[i].baseInfo.mountPath))
                     {
-                        camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
-                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题,通知流媒体重启线程";
-                        LOG(WARNING,inf.toStdString().c_str());
-                        //有问题，通知流媒体，重启线程
-                        sendRelVdRecState(camerasInfo.at(i).cmareId);
+                        disk = diskInfos[i];
+                        break;
+                    }
+                }
+                if(disk.state!=DiskStateInfo::DISK_NORMAL)
+                {
+                    if(camerasInfo[i].relVdSta != CameraStateInfo::UNNORMAL)
+                        isChanged = true;
+
+                    camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
+                    QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制失败："+ diskErrInfoMap[disk.state];
+                    om.remark = inf;
+                    om.status = QString::number(1);
+                    qWarning()<<inf;
+                }else           //2.判断写文件是否成功
+                {
+                    QFileInfo fileInfo(recingFilePath);
+                    if(fileInfo.exists())
+                    {
+                        if(abs(fileInfo.lastModified().toTime_t()-time(NULL))>120)  //修改时间在两分钟以外，说明有问题
+                        {
+                            if(camerasInfo[i].relVdSta != CameraStateInfo::UNNORMAL)
+                                isChanged = true;
+
+                            camerasInfo[i].relVdSta = CameraStateInfo::UNNORMAL;
+                            QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制有问题,通知流媒体重启线程";
+                            LOG(WARNING,inf.toStdString().c_str());
+                            //有问题，通知流媒体，重启线程
+                            sendRelVdRecState(camerasInfo.at(i).cmareId);
+                            om.remark = inf;
+                            om.status = QString::number(1);
+                        }else
+                        {
+                            if(camerasInfo[i].relVdSta != CameraStateInfo::NORMAL)
+                                isChanged = true;
+
+                            camerasInfo[i].relVdSta = CameraStateInfo::NORMAL;
+                            QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制正常";
+                            LOG(INFO,inf.toStdString().c_str());
+                            om.remark = inf;
+                            om.status = QString::number(0);
+                        }
                     }else
                     {
-                        camerasInfo[i].relVdSta = CameraStateInfo::NORMAL;
-                        QString inf = "摄像机："+camerasInfo[i].cmareId +"实时视频录制正常";
-                        LOG(INFO,inf.toStdString().c_str());
+                        qWarning()<<"未找到摄像机 "<<camerasInfo[i].cmareId<<" 当前正在录制的文件名";
                     }
-                }else
-                {
-                    qWarning()<<"未找到摄像机 "<<camerasInfo[i].cmareId<<" 当前正在录制的文件名";
                 }
+
             }else
             {
+                 if(camerasInfo[i].relVdSta != CameraStateInfo::NOT_ONLINE)
+                     isChanged = true;
+
                  camerasInfo[i].relVdSta = CameraStateInfo::NOT_ONLINE;
                  QString inf = "摄像机："+camerasInfo[i].cmareId +"不在线";
                  LOG(INFO,inf.toStdString().c_str());
+                 om.remark = inf;
+                 om.status = QString::number(1);
+            }
+
+            //发送给运维中心
+            if(isChanged)
+            {
+                SendDataToOM(om);
             }
         }
    }
