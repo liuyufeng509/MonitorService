@@ -808,7 +808,7 @@ int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
 
 void StreamMonitor::hisVdReqWithTimer()
 {
-    if(hisReqCount==3)
+    if(hisReqCount>=3)
     {
        hisRqTimer ->stop();
         hisReqCount=0;
