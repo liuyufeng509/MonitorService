@@ -50,7 +50,7 @@ int InitSoap(struct soap * soap, const char * szProxyHost, const char * szProxyP
 }
 
 
-StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),hisReqCount(0)
+StreamMonitor::StreamMonitor(QObject *parent) : QObject(parent),relReqCount(0),hisReqCount(0),HbmediaKillTimes(0)
 {
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_CREATE_FILE, "不能创建文件"); //向map里添加一对“键-值”
     diskErrInfoMap.insert(DiskStateInfo::CAN_NOT_WRITE_FILE, "不能写入文件"); //向map里添加一对“键-值”
@@ -757,7 +757,7 @@ void StreamMonitor::sendThreadInfo(const ThreadStateInfo& thread)
 
       QDomElement equip = doc.createElement("Equipment");//<Equipment>
       message.appendChild(equip);
-      QDomElement camid = doc.createElement("CAMID ");//<CAMID >
+      QDomElement camid = doc.createElement("CAMID");//<CAMID>
       QDomText camidStr = doc.createTextNode(cameraId);
       camid.appendChild(camidStr);
       equip.appendChild(camid);
@@ -955,6 +955,30 @@ void StreamMonitor::monitorDBStatus()
             //重启流媒体进程:此处只杀死流媒体进程，进程狗功能会自动重启流媒体服务
             kill_spider_backgroud((char*)QReadConfig::getInstance()->getProcDogConf().strProcName.toStdString().c_str());
             LOG(WARNING,"3次失败,重启流媒体进程");
+
+            OMData om;
+            om.uuid = uuid;
+            om.devId = uuid;
+            om.type="j9";
+            StreamInfoToOM t;
+            t = strToOM;
+            if(HbmediaKillTimes>=3)
+            {
+                strToOM.relVdState = StreamInfoToOM::UNORMAL;
+                om.remark = "实时视频调看请求失败，且无法回复";
+               // HbmediaKillTimes = 0;
+                if(strToOM.isStreamDown())
+                    om.status = QString::number(1);
+                else
+                    om.status=QString::number(0);
+                if(strToOM.isSend(t))
+                {
+                    SendDataToOM(om);           //发送运维
+                    qInfo()<<"流媒体服务状态在线状态发生变化，不能请求实时视频，上传运维中心";
+                }else
+                    qInfo()<<"流媒体服务状态在线状态未发生变化，不能请求实时视频，不需上传运维中心";
+            }else
+                HbmediaKillTimes++;
         }
     }else
     {
@@ -1084,6 +1108,27 @@ void StreamMonitor::httpFinished()
                  {
                      qWarning()<<"调看摄像机："<<camerasInfo[i].cmareId<<"实时视频成功";
                      relReqCount=0;
+                     //实时视频掉看成功，判断流媒体服务是否回复，是否需要上传运维中心
+                     OMData om;
+                     om.uuid = uuid;
+                     om.devId = uuid;
+                     om.type="j9";
+                     StreamInfoToOM t;
+                     t = strToOM;
+                     strToOM.relVdState = StreamInfoToOM::NORMAL;
+                     om.remark = "实时视频调看请求成功，流媒体服务回复";
+                     HbmediaKillTimes = 0;
+                     if(strToOM.isStreamDown())
+                         om.status = QString::number(1);
+                     else
+                         om.status=QString::number(0);
+                     if(strToOM.isSend(t))
+                     {
+                         SendDataToOM(om);           //发送运维
+                         qInfo()<<"流媒体服务状态在线状态发生变化，请求实时视频成功，上传运维中心";
+                     }else
+                         qInfo()<<"流媒体服务状态在线状态未发生变化，请求实时视频成功，不需上传运维中心";
+
                  }
                  break;
              }

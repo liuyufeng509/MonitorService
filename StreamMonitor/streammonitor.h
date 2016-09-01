@@ -117,6 +117,7 @@ private:
     //清空所有数据（HbMedia 进程不存在时)
     void clearAll();
 
+    int HbmediaKillTimes;       //杀死流媒体服务的次数，超过3次便当作失败。
 };
 
 #endif // STREAMMONITOR_H
