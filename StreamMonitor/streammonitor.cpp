@@ -790,6 +790,8 @@ int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
       if(retcode==SOAP_OK)
       {
           qInfo()<<"摄像机"<<camera.cmareId<<"实时视频调看成功,释放请求";
+          ns__Response Response;
+          soap_call_ns__AbandonCameraStream(&rsoap, QReadConfig::getInstance()->getGsoapInfoConf().soapEndpoint.toStdString().c_str(), "", nsUserInfo, camera.cmareId.toInt(),&Response);
           soap_destroy(&rsoap);
           soap_end(&rsoap);
           soap_done(&rsoap);
@@ -803,7 +805,7 @@ int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
           qInfo()<<"释放完毕";
           return -1;
       }
-      return 0;
+      return retcode;
 }
 
 void StreamMonitor::hisVdReqWithTimer()
