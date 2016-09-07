@@ -791,6 +791,8 @@ int  StreamMonitor::monitorRelVdWithGsoap(const CameraStateInfo &camera)
       {
           qInfo()<<"摄像机"<<camera.cmareId<<"实时视频调看成功,释放请求";
           ns__Response Response;
+          rsoap.userid = "roy";
+          rsoap.passwd = "liang";
           soap_call_ns__AbandonCameraStream(&rsoap, QReadConfig::getInstance()->getGsoapInfoConf().soapEndpoint.toStdString().c_str(), "", nsUserInfo, camera.cmareId.toInt(),&Response);
           soap_destroy(&rsoap);
           soap_end(&rsoap);
@@ -1049,6 +1051,13 @@ void StreamMonitor::checkHisURL(QString httpUrl)
 void StreamMonitor::httpReadyRead()
 {
     QByteArray data = reply->read(100);
+    if(data.size()<86)
+    {
+        qInfo()<<"收到历史视频文件字节数为空，断开信号cao，删除对象";
+        disconnect(reply,SIGNAL(readyRead()),this,SLOT(httpReadyRead()));
+        reply->deleteLater();
+        return;
+    }
     qInfo()<<"收到历史视频流数据："<<data.toHex();
     if(data[0]==0&&data[1]==0&&data[14]==0&&data[15]==0&&data[32]==0&&data[33]==0&&data[62]==0&&
         data[63]==0&&data[81]==0&&data[82]==0&&data[83]==0&&
