@@ -896,11 +896,11 @@ void StreamMonitor::monitorDBStatus()
                 else
                   db = QSqlDatabase::addDatabase("QSQLITE");
 
-                if(db.isOpen())
-                {
-                    LOG(WARNING, "db already opened");
-                    return;
-                }
+//                if(db.isOpen())
+//                {
+//                    LOG(WARNING, "db already opened");
+//                    return;
+//                }
 
                  db.setDatabaseName(dbPath); // 数据库名与路径, 此时是放在同目录下
                  db.setUserName("");
