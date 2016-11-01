@@ -38,8 +38,8 @@ void IOSpeedMonitorThread::run()
             QString cmd = "LANG=zh_US.UTF-8 && dd if=/dev/zero of="+g_speedList[i].mountPath+"test bs=8k count=35000 2>&1 | sed -n \"3,1p\" | awk  \'{print $8 \" \" $9}\'";
             QString cmd2 = "LANG=zh_US.UTF-8 && dd if="+g_speedList[i].mountPath+"test of=/dev/null bs=8k count=55000 2>&1 | sed -n \"3,1p\" | awk  \'{print $8 \" \" $9}\'";
             DiskIOSpeed ioSpeed;
-            ioSpeed.wSpeed = GetSpeed(cmd);
-            ioSpeed.rSpeed = GetSpeed(cmd2);
+            ioSpeed.wSpeed = GetSpeed(cmd).trimmed();
+            ioSpeed.rSpeed = GetSpeed(cmd2).trimmed();
             qInfo()<<"ioSpeed.wSpeed.toStdString().c_str()="<<ioSpeed.wSpeed;
             qInfo()<<"ioSpeed.rSpeed.toStdString().c_str()="<<ioSpeed.rSpeed;
             if(ioSpeed.wSpeed.length()!=0 && ioSpeed.rSpeed.length()!=0)

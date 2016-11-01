@@ -224,8 +224,8 @@ void getSysResource(SysResource &sysRes)
                 DiskIOSpeed speed = g_speedList[j].GetIOSpeed();
                 sysRes.disks[i].wSpeed = speed.wSpeed;
                 sysRes.disks[i].rSpeed = speed.rSpeed;
-                cout<<sysRes.disks[i].wSpeed.toStdString().c_str()<<endl;
-                cout<<sysRes.disks[i].rSpeed.toStdString().c_str()<<endl;
+               // cout<<sysRes.disks[i].wSpeed.toStdString().c_str()<<endl;
+               // cout<<sysRes.disks[i].rSpeed.toStdString().c_str()<<endl;
             }
         }
         mutex.unlock();

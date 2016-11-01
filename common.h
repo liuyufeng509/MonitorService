@@ -337,66 +337,58 @@ struct DiskIOSpeedList
 
     DiskIOSpeed GetIOSpeed()
     {
-        //mutex->lock();
-        //cout<<"GetIOSpeed locked"<<endl;
         DiskIOSpeed iospeed;
        if(speedList.size()==0)
        {
-           // mutex->unlock();
-            return iospeed;
+         // cout<<"queue is null"<<endl;
+          return iospeed;
        }
-       float ws = 0.0, rs=0.0, sumw=0.0, sumr=0.0;
-       for(int i=0; i<speedList.size(); i++)
-       {
-           //qInfo()<<"speedList["<<i<<"].wSpeed="<<speedList[i].wSpeed;
-           //qInfo()<<"speedList["<<i<<"].rSpeed="<<speedList[i].rSpeed;
-           QStringList wstr = speedList[i].wSpeed.split(" ");
-           QStringList rstr = speedList[i].rSpeed.split(" ");
-           if(wstr.size()<2 || rstr.size()<2)
-           {
-               qCritical()<<"速度值不对";
-               //mutex->unlock();
-               return iospeed;
-           }
-           cout<<"wspeed="<<speedList[i].wSpeed.toStdString().c_str()<<endl;
-           if(wstr[1].trimmed()=="GB/s")
-           {
-               cout<<"wstr is GB:"<<wstr[1].toStdString().c_str();
-               ws = wstr[0].toFloat()*1024;
-               speedList[i].wSpeed = QString::number(ws)+" MB/s";
-              // cout<<"ws(GB)="<<ws<<endl;
-           }else
-           {
-                ws = wstr[0].toFloat();
-               // cout<<"ws="<<ws<<endl;
-            }
 
-           if(rstr[1].trimmed()=="GB/s")
+       float ws=0,rs=0, sumw=0, sumr=0, aws=0, ars=0;
+       int count=speedList.size();
+      // cout<<"count="<<count<<endl;
+       for(int i=0; i<count; i++)
+       {
+          // cout<<"speedList["<<i<<"].wSpeed="<<speedList[i].wSpeed.toStdString().c_str()<<endl;
+          // cout<<"speedList["<<i<<"].rSpeed="<<speedList[i].rSpeed.toStdString().c_str()<<endl;
+           QStringList wl = speedList[i].wSpeed.split(" ");
+           QStringList rl = speedList[i].rSpeed.split(" ");
+          // cout<<"w1[0]="<<wl[0].toStdString().c_str()<<" wl[1]="<<wl[1].toStdString().c_str()<<endl;
+          // cout<<"rl[0]="<<rl[0].toStdString().c_str()<<" rl[1]="<<rl[1].toStdString().c_str()<<endl;
+           if(wl[1]=="GB/s")
            {
-               cout<<"rstr is GB:"<<rstr[1].toStdString().c_str();
-               rs = rstr[0].toFloat()*1024;
-               speedList[i].wSpeed = QString::number(rs)+" MB/s";
-              // cout<<"rs(GB)="<<rs<<endl;
+          //      cout<<"wl is GB"<<endl;
+                ws = wl[0].toFloat()*1024;
            }else
            {
-                rs = rstr[0].toFloat();
-                //cout<<"rs="<<rs<<endl;
+               ws = wl[0].toFloat();
            }
+           //cout<<"ws="<<ws<<endl;
+
+           if(rl[1]=="GB/s")
+           {
+            //    cout<<"rl is GB"<<endl;
+                rs = rl[0].toFloat()*1024;
+           }else
+           {
+               rs = rl[0].toFloat();
+           }
+          // cout<<"rs="<<rs<<endl;
+
            sumw += ws;
            sumr += rs;
-           //cout<<"sumw="<<sumw<<" sumr="<<sumr<<endl;
        }
-       ws = sumw/speedList.size();
-       rs = sumr/speedList.size();
-      // cout<<"ws(last)="<<ws<<endl;
-      // cout<<"rs(last)="<<rs<<endl;
-       iospeed.wSpeed = QString::number(ws)+ " MB/s";
-       iospeed.rSpeed = QString::number(rs) + " MB/s";
-       //mutex->unlock();
-       //cout<<"GetIOSpeed unlocked"<<endl;
-       cout<<"iospeed.wSpeed="<<iospeed.wSpeed.toStdString().c_str()<<endl;
-       cout<<"iospeed.rSpeed="<<iospeed.rSpeed.toStdString().c_str()<<endl;
-       return iospeed;
+        aws = sumw/count;
+        ars = sumr/count;
+
+        //cout<<"aws="<<aws<<endl;
+        //cout<<"ars="<<ars<<endl;
+
+        iospeed.wSpeed = QString::number(aws)+"MB/s";
+        iospeed.rSpeed = QString::number(ars) + "MB/s";
+        //cout<<"iospeed.wSpeed ="<<iospeed.wSpeed.toStdString().c_str()<<endl;
+        //cout<<"iospeed.rSpeed ="<<iospeed.rSpeed.toStdString().c_str()<<endl;
+        return iospeed;
     }
 
     void PushSpeedInfo(DiskIOSpeed speed)
@@ -407,8 +399,8 @@ struct DiskIOSpeedList
         {
             speedList.dequeue();
         }
-        cout<<"push speed.wspeed="<<speed.wSpeed.toStdString().c_str()<<endl;
-        cout<<"push speed.rspeed="<<speed.rSpeed.toStdString().c_str()<<endl;
+       // cout<<"push speed.wspeed="<<speed.wSpeed.toStdString().c_str()<<endl;
+       // cout<<"push speed.rspeed="<<speed.rSpeed.toStdString().c_str()<<endl;
         speedList.enqueue(speed);
        // mutex->unlock();
         //cout<<"push unlocked"<<endl;
