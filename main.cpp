@@ -3,6 +3,7 @@
 #include<QProcess>
 #include"SysMonitor/sysmonitorthread.h"
 #include"StreamMonitor/streammonitorthread.h"
+#include "SysMonitor/iospeedmonitorthread.h"
 #include "commandline.h"
 #include <QtDebug>
 #include<unistd.h>
@@ -67,6 +68,9 @@ int main(int argc, char *argv[])
 
     LOG(WARNING, "Start MonitorService");
 
+    //启动io速度检测线程
+    IOSpeedMonitorThread ioSpeedThread;
+    ioSpeedThread.start();
     //启动系统资源监控线程，进程狗应该是属于系统资源监控的一部分
     SysMonitorThread sysMonitorThread;
     sysMonitorThread.start();

@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     SysMonitor/systemresourcemonitor.cpp \
     common.cpp \
     intcommon/BaseC.cpp \
-    intcommon/BaseClient.cpp
+    intcommon/BaseClient.cpp \
+    SysMonitor/iospeedmonitorthread.cpp
 
 HEADERS += \
     config/qreadconfig.h \
@@ -45,7 +46,8 @@ HEADERS += \
     NetMaster.h \
     intcommon/BaseH.h \
     intcommon/BaseintcommonObject.h \
-    intcommon/BaseStub.h
+    intcommon/BaseStub.h \
+    SysMonitor/iospeedmonitorthread.h
 
 DISTFILES += \
     config.ini

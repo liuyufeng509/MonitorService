@@ -5,6 +5,12 @@ SysMonitor::SysMonitor(QObject *parent) : QObject(parent)
 {
     systemResourceMonitor = new SystemResourceMonitor;
     procRes.procName = QReadConfig::getInstance()->getProcDogConf().strProcName;
+    for(int i=0; i<QReadConfig::getInstance()->getDiskCong().diskPaths.size(); i++)
+    {
+        DiskBaseInfo disk;
+        disk.mountPath = QReadConfig::getInstance()->getDiskCong().diskPaths[i];
+        sysRes.disks.append(disk);
+    }
 }
 
 SysMonitor::~SysMonitor()
@@ -35,6 +41,7 @@ void SysMonitor::monitorSysResource()
         LOG(INFO, ("非root可用大小："+QString::number(sysRes.disks[i].available_size>>10)+"M").toStdString().c_str());
         LOG(INFO, ("空闲："+QString::number(sysRes.disks[i].free_size>>10)+"M").toStdString().c_str());
         LOG(INFO, ("块个数："+QString::number(sysRes.disks[i].f_blocks>>10)+"M").toStdString().c_str());
+        qInfo()<<"读速度:"<<sysRes.disks[i].rSpeed<<"  写速度:"<<sysRes.disks[i].wSpeed;
     }
 
     LOG(INFO, "*************进程资源***************");

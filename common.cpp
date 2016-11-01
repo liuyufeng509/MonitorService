@@ -12,6 +12,9 @@ using namespace std;
 bool isOMInited = false;
 QString uuid = "";
 StreamInfoToOM strToOM;
+QMutex mutex;
+
+QList<DiskIOSpeedList> g_speedList;
 
 #define MAX_SIZE  255
 QString getCwdPath()
@@ -116,8 +119,8 @@ std::string getPidByName(char* task_name)
                 //如果文件内容满足要求则打印路径的名字（即进程的PID）
                 if (!strcmp(task_name, cur_task_name))
                 {
-                    if(isDebug)
-                        printf("PID:  %s\n", ptr->d_name);
+                    //if(isDebug)
+                     //   printf("PID:  %s\n", ptr->d_name);
                     strcpy(pidstr, ptr->d_name);
                     qInfo()<<"pid:"<<pidstr<<" name:"<<task_name;
                 }
@@ -213,7 +216,21 @@ void getSysResource(SysResource &sysRes)
         DiskStateInfo disk;
         getDiskInfo((char*)sysRes.disks[i].mountPath.toStdString().c_str(), disk);
         sysRes.disks[i] = disk.baseInfo;
+        mutex.lock();
+        for(int j=0; j<g_speedList.size();j++)
+        {
+            if(g_speedList[j].mountPath==sysRes.disks[i].mountPath)
+            {
+                DiskIOSpeed speed = g_speedList[j].GetIOSpeed();
+                sysRes.disks[i].wSpeed = speed.wSpeed;
+                sysRes.disks[i].rSpeed = speed.rSpeed;
+                cout<<sysRes.disks[i].wSpeed.toStdString().c_str()<<endl;
+                cout<<sysRes.disks[i].rSpeed.toStdString().c_str()<<endl;
+            }
+        }
+        mutex.unlock();
     }
+
 }
 
 void getProcResource(ProcResource &procRes)
@@ -266,18 +283,18 @@ void getCPUStatus(Procstat& ps) {
      inputFile = fopen("stat", "r");
      if (!inputFile) {
          if(isDebug)
-            perror("error: Can not open file.\n");
+            ;//perror("error: Can not open file.\n");
          else
             qCritical()<<"error: Can not open file.";
      }
 
      char buff[1024];
      fgets(buff, sizeof(buff), inputFile); // Read 1 line.
-     if(isDebug)
-        printf(buff);
+     //if(isDebug)
+      //  printf(buff);
      sscanf(buff, "%s %u %u %u %u %u %u %u %u %u", ps.processorName, &ps.user, &ps.nice, &ps.system, &ps.idle, &ps.iowait, &ps.irq, &ps.softirq, &ps.stealstolen, &ps.guest); // Scan from "buff".
      if(isDebug)
-         printf("user: %u\n", ps.user);
+        ; //printf("user: %u\n", ps.user);
      else
          qInfo()<<"user:"<<ps.user;
 
@@ -301,11 +318,11 @@ float calculateProcCPUUse(Procstat ps1, Procstat ps2) {
      unsigned int totalCPUTimePS2 = (ps2.user + ps2.nice + ps2.system + ps2.idle + ps2.iowait + ps2.irq + ps2.softirq + ps2.stealstolen + ps2.guest);
      unsigned int totalCPUTimePS1 = (ps1.user + ps1.nice + ps1.system + ps1.idle + ps1.iowait + ps1.irq + ps1.softirq + ps1.stealstolen + ps1.guest);
      float CPUUse = ((float)procTotalTime) / (float) totalCPUTime;
-     if(isDebug)
-         {
-         printf("totalCPUTime: %u\procTotalTime: %u ProcCPUUSE:%f\n", totalCPUTime, procTotalTime,CPUUse);
-         printf("totalCPUTimePS2: %u\totalCPUTimePS1: %u \n", totalCPUTimePS2, totalCPUTimePS1);
-     }
+    // if(isDebug)
+     //    {
+         //printf("totalCPUTime: %u\procTotalTime: %u ProcCPUUSE:%f\n", totalCPUTime, procTotalTime,CPUUse);
+        // printf("totalCPUTimePS2: %u\totalCPUTimePS1: %u \n", totalCPUTimePS2, totalCPUTimePS1);
+    // }
 
      return CPUUse;
 }

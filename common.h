@@ -13,7 +13,10 @@
 #include <sys/vfs.h>
 #include <errno.h>
 #include "NetMaster.h"
-
+#include <QQueue>
+#include<QMutex>
+#include <iostream>
+using namespace std;
 //硬盘基本信息
 struct DiskBaseInfo
 {
@@ -29,6 +32,8 @@ struct DiskBaseInfo
     qint64 available_size;                //非root用户可以用的磁盘空间大小
     qint64 free_size;                                  //硬盘的所有剩余空间 K
     qint64 f_blocks;                                //块个数
+    QString wSpeed;
+    QString rSpeed;
 };
 
 //硬盘状态信息，根据此信息判断是否进行自恢复和通知流媒体服务
@@ -313,7 +318,108 @@ struct StreamInfoToOM
 };
 
 extern StreamInfoToOM strToOM;
+struct DiskIOSpeed
+{
+    DiskIOSpeed()//:wSpeed(0),rSpeed(0)
+    {
 
+    }
+    QString wSpeed;
+    QString rSpeed;
+};
 
+struct DiskIOSpeedList
+{
+    DiskIOSpeedList()
+    {
+        mutex = new QMutex;
+    }
+
+    DiskIOSpeed GetIOSpeed()
+    {
+        //mutex->lock();
+        //cout<<"GetIOSpeed locked"<<endl;
+        DiskIOSpeed iospeed;
+       if(speedList.size()==0)
+       {
+           // mutex->unlock();
+            return iospeed;
+       }
+       float ws = 0.0, rs=0.0, sumw=0.0, sumr=0.0;
+       for(int i=0; i<speedList.size(); i++)
+       {
+           //qInfo()<<"speedList["<<i<<"].wSpeed="<<speedList[i].wSpeed;
+           //qInfo()<<"speedList["<<i<<"].rSpeed="<<speedList[i].rSpeed;
+           QStringList wstr = speedList[i].wSpeed.split(" ");
+           QStringList rstr = speedList[i].rSpeed.split(" ");
+           if(wstr.size()<2 || rstr.size()<2)
+           {
+               qCritical()<<"速度值不对";
+               //mutex->unlock();
+               return iospeed;
+           }
+           cout<<"wspeed="<<speedList[i].wSpeed.toStdString().c_str()<<endl;
+           if(wstr[1].trimmed()=="GB/s")
+           {
+               cout<<"wstr is GB:"<<wstr[1].toStdString().c_str();
+               ws = wstr[0].toFloat()*1024;
+               speedList[i].wSpeed = QString::number(ws)+" MB/s";
+              // cout<<"ws(GB)="<<ws<<endl;
+           }else
+           {
+                ws = wstr[0].toFloat();
+               // cout<<"ws="<<ws<<endl;
+            }
+
+           if(rstr[1].trimmed()=="GB/s")
+           {
+               cout<<"rstr is GB:"<<rstr[1].toStdString().c_str();
+               rs = rstr[0].toFloat()*1024;
+               speedList[i].wSpeed = QString::number(rs)+" MB/s";
+              // cout<<"rs(GB)="<<rs<<endl;
+           }else
+           {
+                rs = rstr[0].toFloat();
+                //cout<<"rs="<<rs<<endl;
+           }
+           sumw += ws;
+           sumr += rs;
+           //cout<<"sumw="<<sumw<<" sumr="<<sumr<<endl;
+       }
+       ws = sumw/speedList.size();
+       rs = sumr/speedList.size();
+      // cout<<"ws(last)="<<ws<<endl;
+      // cout<<"rs(last)="<<rs<<endl;
+       iospeed.wSpeed = QString::number(ws)+ " MB/s";
+       iospeed.rSpeed = QString::number(rs) + " MB/s";
+       //mutex->unlock();
+       //cout<<"GetIOSpeed unlocked"<<endl;
+       cout<<"iospeed.wSpeed="<<iospeed.wSpeed.toStdString().c_str()<<endl;
+       cout<<"iospeed.rSpeed="<<iospeed.rSpeed.toStdString().c_str()<<endl;
+       return iospeed;
+    }
+
+    void PushSpeedInfo(DiskIOSpeed speed)
+    {
+        //mutex->lock();
+        // cout<<"push locked"<<endl;
+        if(speedList.size()>10)
+        {
+            speedList.dequeue();
+        }
+        cout<<"push speed.wspeed="<<speed.wSpeed.toStdString().c_str()<<endl;
+        cout<<"push speed.rspeed="<<speed.rSpeed.toStdString().c_str()<<endl;
+        speedList.enqueue(speed);
+       // mutex->unlock();
+        //cout<<"push unlocked"<<endl;
+    }
+
+    QString mountPath;
+    QQueue<DiskIOSpeed> speedList;
+private:
+    QMutex *mutex;
+};
+extern QList<DiskIOSpeedList> g_speedList;
+extern QMutex mutex;
 extern bool isDebug;
 #endif // COMMON_H
