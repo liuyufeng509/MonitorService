@@ -353,6 +353,10 @@ struct DiskIOSpeedList
           // cout<<"speedList["<<i<<"].rSpeed="<<speedList[i].rSpeed.toStdString().c_str()<<endl;
            QStringList wl = speedList[i].wSpeed.split(" ");
            QStringList rl = speedList[i].rSpeed.split(" ");
+           if(wl.size()<2 || rl.size()<2)
+           {
+                qWarning()<<"split速度，得到的字符串列表大小小于2";
+           }
           // cout<<"w1[0]="<<wl[0].toStdString().c_str()<<" wl[1]="<<wl[1].toStdString().c_str()<<endl;
           // cout<<"rl[0]="<<rl[0].toStdString().c_str()<<" rl[1]="<<rl[1].toStdString().c_str()<<endl;
            if(wl[1]=="GB/s")

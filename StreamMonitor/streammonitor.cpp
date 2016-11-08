@@ -1206,9 +1206,9 @@ void StreamMonitor::monitorCamera()
                 DiskStateInfo disk;
                 for(int j=0; j<diskInfos.size(); j++)
                 {
-                    if(recingFilePath.contains(diskInfos[i].baseInfo.mountPath))
+                    if(recingFilePath.contains(diskInfos[j].baseInfo.mountPath))
                     {
-                        disk = diskInfos[i];
+                        disk = diskInfos[j];
                         break;
                     }
                 }
