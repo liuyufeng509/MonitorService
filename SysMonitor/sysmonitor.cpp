@@ -37,10 +37,10 @@ void SysMonitor::monitorSysResource()
     for(int i=0; i<sysRes.disks.size(); i++)
     {
         LOG(INFO, ("硬盘："+QString::number(i+1)+" 路径："+sysRes.disks[i].mountPath).toStdString().c_str());
-        LOG(INFO, ("总大小："+QString::number(sysRes.disks[i].total_size>>10)+"M").toStdString().c_str());
-        LOG(INFO, ("非root可用大小："+QString::number(sysRes.disks[i].available_size>>10)+"M").toStdString().c_str());
-        LOG(INFO, ("空闲："+QString::number(sysRes.disks[i].free_size>>10)+"M").toStdString().c_str());
-        LOG(INFO, ("块个数："+QString::number(sysRes.disks[i].f_blocks>>10)+"M").toStdString().c_str());
+        LOG(INFO, ("总大小："+QString::number(sysRes.disks[i].total_size>>20)+"M").toStdString().c_str());
+        LOG(INFO, ("非root可用大小："+QString::number(sysRes.disks[i].available_size>>20)+"M").toStdString().c_str());
+        LOG(INFO, ("空闲："+QString::number(sysRes.disks[i].free_size>>20)+"M").toStdString().c_str());
+        LOG(INFO, ("块个数："+QString::number(sysRes.disks[i].f_blocks>>20)+"M").toStdString().c_str());
         qInfo()<<"读速度:"<<sysRes.disks[i].rSpeed<<"  写速度:"<<sysRes.disks[i].wSpeed;
     }
 
