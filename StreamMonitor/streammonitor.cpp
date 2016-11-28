@@ -236,6 +236,8 @@ void StreamMonitor::doParseXml(QString xml)
 
                 QDomElement uuid = equipment.firstChildElement("UUID");     //<UUID>
                 camInfo.uuid = uuid.text();
+                QDomElement status = equipment.firstChildElement("STATUS");     //<STATUS>
+                camInfo.online = status.text().toInt()? false:true;     //0在线 1不在线
                 switch (action.text().toInt())
                 {
                 case 1:         //init
