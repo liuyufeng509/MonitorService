@@ -180,28 +180,28 @@ int getDiskInfo(char *path, DiskStateInfo &diskInfo)
 
     //输出每个块的长度，linux下内存块为4KB
     //printf("block size: %ld bytes\n", disk_info.f_bsize);
-    qInfo()<<"block size: "<<disk_info.f_bsize<<" bytes";
+    //qInfo()<<"block size: "<<disk_info.f_bsize<<" bytes";
     //输出块个数
    // printf("total data blocks: %ld \n", disk_info.f_blocks);
-    qInfo()<<"total data blocks: "<<disk_info.f_blocks;
+   // qInfo()<<"total data blocks: "<<disk_info.f_blocks;
     //输出path所在磁盘的大小
    // printf("total file disk size: %d MB\n",total_size >> 20);
-    qInfo()<<"total file disk size: "<<(total_size >> 20)<<" MB";
+   // qInfo()<<"total file disk size: "<<(total_size >> 20)<<" MB";
     //输出非root用户可以用的磁盘空间大小
     //printf("avaiable size: %d MB\n",available_size >> 20);
-    qInfo()<<"avaiable size: "<<(available_size >> 20)<<" MB";
+   // qInfo()<<"avaiable size: "<<(available_size >> 20)<<" MB";
     //输出硬盘的所有剩余空间
    // printf("free size: %d MB\n",free_size >> 20);
-    qInfo()<<"free size: "<<free_size<<" MB";
+    //qInfo()<<"free size: "<<free_size<<" MB";
     //输出磁盘上文件节点个数
    // printf("total file nodes: %ld\n", disk_info.f_files);
-    qInfo()<<"total file nodes: "<<disk_info.f_files;
+   // qInfo()<<"total file nodes: "<<disk_info.f_files;
     //输出可用文件节点个数
    // printf("free file nodes: %ld\n", disk_info.f_ffree);
-    qInfo()<<"free file nodes:  "<<disk_info.f_ffree;
+   // qInfo()<<"free file nodes:  "<<disk_info.f_ffree;
     //输出文件名最大长度
    // printf("maxinum length of file name: %ld\n", disk_info.f_namelen);
-    qInfo()<<"maxinum length of file name: "<<disk_info.f_namelen;
+   // qInfo()<<"maxinum length of file name: "<<disk_info.f_namelen;
 
     return 0;
 }
