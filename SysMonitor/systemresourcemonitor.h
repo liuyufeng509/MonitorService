@@ -128,8 +128,9 @@ private:
     long* GetNetInterRealTimeSpeed(char* netInterName);     //获取网络接口实时上传和下载速度
     void GetNetInterBandwidthUsage(net_t& net);             //获取网络接口带宽使用率
     void KillAndStartProcess(char* processName);            //杀死并重启进程
-    void StartProcess();                                                            //启动流媒体进程
+    bool StartProcess();                                                            //启动流媒体进程
 
+    int count;       //连续启动失败的次数
 };
 
 #endif // SYSTEMRESOURCEMONITOR_H

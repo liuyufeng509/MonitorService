@@ -293,20 +293,20 @@ struct StreamInfoToOM
         NORMAL=1,
         UNORMAL=2,
     };
-    StreamInfoToOM():disksState(NORMAL),relVdState(NORMAL),hisVdState(NORMAL)
+    StreamInfoToOM():disksState(NORMAL),relVdState(NORMAL),hisVdState(NORMAL),isStarted(true)
     {
 
     }
     bool isSend(const StreamInfoToOM &other)
     {
-        if(disksState!=other.disksState || relVdState!=other.relVdState || hisVdState!=other.hisVdState)
+        if(disksState!=other.disksState || relVdState!=other.relVdState || hisVdState!=other.hisVdState || isStarted != other.isStarted)
             return true;
         else
             return false;
     }
     bool isStreamDown()
     {
-        if(disksState==NORMAL && relVdState==NORMAL&&hisVdState==NORMAL)
+        if(disksState==NORMAL && relVdState==NORMAL&&hisVdState==NORMAL && isStarted)
             return false;
         else
             return true;
@@ -315,6 +315,7 @@ struct StreamInfoToOM
     int disksState;         //所有硬盘的状态，当所有硬盘都坏掉时，流媒体坏掉
     int relVdState;         //实时视频调看结果，当3次调用都失败时，流媒体坏掉
     int hisVdState;         //历史视频调看结果，当3次调用都失败时，流媒体坏掉
+    bool isStarted;         //流媒体服务是否已经启动
 };
 
 extern StreamInfoToOM strToOM;

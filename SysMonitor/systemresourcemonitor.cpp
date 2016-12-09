@@ -2,7 +2,8 @@
 #include"../config/qreadconfig.h"
 #include<QFileInfo>
 #include<QProcess>
-SystemResourceMonitor::SystemResourceMonitor()
+#include<time.h>
+SystemResourceMonitor::SystemResourceMonitor():count(0)
 {
 }
 
@@ -694,7 +695,7 @@ void SystemResourceMonitor::KillAndStartProcess(char* processName)
     LOG(INFO, ("KillAndStartProcess end:"+ QString(fileName)).toStdString().c_str());
 }
 
-void SystemResourceMonitor::StartProcess()
+bool SystemResourceMonitor::StartProcess()
 {
 
     string str = QReadConfig::getInstance()->getProcDogConf().strPath.toStdString();
@@ -705,7 +706,7 @@ void SystemResourceMonitor::StartProcess()
     char* fileName = NULL;
     fileName = (char*)str1.data();
     //使用qt创建进程
-    QProcess::startDetached(fileName);
+    bool ret = QProcess::startDetached(fileName);
 //    signal(SIGCHLD, SIG_IGN);
 //    if(fork()==0)
 //    {
@@ -716,6 +717,7 @@ void SystemResourceMonitor::StartProcess()
 //        }
 //    }
     LOG(INFO, ("StartProcess end:"+ QString(fileName)).toStdString().c_str());
+    return ret;
 }
 
 void SystemResourceMonitor::MediaProcessMonitor()
@@ -726,8 +728,57 @@ void SystemResourceMonitor::MediaProcessMonitor()
     int processID = atoi(getPidByName(processName).c_str());
     if(processID==0)            //进程号为0，说明未启动
     {
+
         LOG(INFO,"进程id为0，程序未启动,启动之");
-        StartProcess();
+        if(!StartProcess())
+        {
+            count ++;       //启动失败一次就加一
+            if(count >= 12)     //超过1分钟启动失败就上报运维中心
+            {
+                //上报
+                OMData om;
+                om.uuid = uuid;
+                om.devId = uuid;
+                om.type="j9";
+                StreamInfoToOM t;
+                t = strToOM;
+                strToOM.isStarted = false;
+                om.remark = "流媒体服务器进程启动失败";
+                if(strToOM.isStreamDown())
+                    om.status = QString::number(1);
+                else
+                    om.status=QString::number(0);
+                if(strToOM.isSend(t))
+                {
+                    SendDataToOM(om);           //发送运维
+                    qInfo()<<"流媒体服务状态在线状态发生变化，流媒体服务启动失败，上报运维中心";
+                }else
+                    qInfo()<<"流媒体服务状态在线状态未发生变化，流媒体服务启动失败，不需上传运维中心";
+
+            }
+        }else
+        {
+            count=0;
+            //上报
+            OMData om;
+            om.uuid = uuid;
+            om.devId = uuid;
+            om.type="j9";
+            StreamInfoToOM t;
+            t = strToOM;
+            strToOM.isStarted = true;
+            om.remark = "流媒体服务器进程启动成功";
+            if(strToOM.isStreamDown())
+                om.status = QString::number(1);
+            else
+                om.status=QString::number(0);
+            if(strToOM.isSend(t))
+            {
+                SendDataToOM(om);           //发送运维
+                qInfo()<<"流媒体服务状态在线状态发生变化，流媒体服务启动成功，上报运维中心";
+            }else
+                qInfo()<<"流媒体服务状态在线状态未发生变化，流媒体服务启动成功，不需上传运维中心";
+        }
     }else                               //进程如果已启动，判断进程状态
     {
         char state[2] = {0};
