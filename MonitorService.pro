@@ -105,7 +105,7 @@ unix:!macx: LIBS += -L$$PWD/lib/ -lstdc++
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
 
-unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMasterd
+unix:!macx: LIBS += -L$$PWD/lib/ -lFrontNetMaster
 
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
